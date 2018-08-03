@@ -1,0 +1,6 @@
+# Files and folders to be ignored when working with the CyTag repository
+CyTag/__pycache__
+CyTag/src/__pycache__
+CyTag/src/shared/__pycache__
+CyTag/outputs/*
+
