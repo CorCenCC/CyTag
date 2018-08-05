@@ -11,7 +11,7 @@
 
 As well as being run individually, the `CyTag.py` script allows for all of the tools to be run in sequence as a complete pipeline (the default option) or for a customised pipeline to be specified. Please see further sections of this file for more information on running the individual tools, the full default pipeline, or customised pipelines.
 
-`CyTag` has been developed at Cardiff University as part of the [`CorCenCC`](http://www.corcencc.org) project.
+*CyTag* has been developed at Cardiff University as part of the [CorCenCC](http://www.corcencc.org) project.
 
 
 ## Dependencies
@@ -64,11 +64,11 @@ A name to be used for the saved output text and files.
 
 #### -d/--dir
 
-A folder to be created in `*PATH*/CyTag/outputs/` and into which the output files from running CyTag will be saved.
+A folder to be created in `*PATH*/CyTag/outputs/` and into which the output files from running *CyTag* will be saved.
 
 #### -c/--component
 
-Specify a specific part of the CyTag pipeline to run to. By default, the entire pipeline (text segmenter -> sentence splitter -> tokeniser -> part-of-speech tagger) is run. Currently supported components include: 'seg', 'sent', 'tok', 'pos'.
+Specify a specific part of the *CyTag* pipeline to run to. By default, the entire pipeline (text segmenter -> sentence splitter -> tokeniser -> part-of-speech tagger) is run. Currently supported components include: 'seg', 'sent', 'tok', 'pos'.
 
 #### -f/--format
 
@@ -103,7 +103,7 @@ python3 *PATH*/CyTag/CyTag.py < example.txt
 
 ## Contact
 
-Questions about CyTag can be directed to: 
+Questions about *CyTag* can be directed to: 
 * Steve Neale <<steveneale3000@gmail.com>> <<NealeS2@cardiff.ac.uk>>
 * Kevin Donnelly <<kevin@dotmon.com>>
 * Dawn Knight <<KnightD5@cardiff.ac.uk>>
