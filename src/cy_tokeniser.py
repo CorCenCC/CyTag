@@ -175,7 +175,7 @@ def tokenise(sentence, total_sentences=None, total_tokens=None):
 	if sentence[-1:] == "." and sentence[-2:] != " .":
 		sentence = "{}{}".format(sentence[:-1], " .")
 	tokens = token_split(sentence, total_tokens)
-	tokens = remove_markup(tokens)
+	#tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
 	return(split_tokens)

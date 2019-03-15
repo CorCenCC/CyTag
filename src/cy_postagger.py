@@ -62,6 +62,9 @@ output = {"directory": None, "readings": None, "readingsPostCG": None, "unknown_
 
 sentence_lengths = []
 
+marking_up = False
+markup = {}
+
 vislcg3_location = subprocess.Popen(["which", "vislcg3"], stdout=subprocess.PIPE).communicate()[0].strip()
 
 existing_unknown_words = []
@@ -718,12 +721,26 @@ def run_cg(cg_readings, vislcg3_location):
 	cg_output = cg_process.communicate(input=cg_readings.encode("utf-8"))[0]
 	return(cg_output.decode("utf-8"))
 
+def markup_check(token):
+	""" Find and record markup in a given token """
+	global marking_up
+	if token[1].startswith("<") and ">" in token[1] and marking_up == False:
+		markup[token[0]] = "type"
+		marking_up = True
+	elif token[1].endswith(">") and "</" in token[1] and marking_up == True:	
+		markup[token[0]] = markup[str(int(token[0])-1)]
+		marking_up = False
+	elif marking_up == True:
+		markup[token[0]] = markup[str(int(token[0])-1)]
+	return(token)
+
 def sentence_readings(tokenised_sentence, total_tokens):
 	""" Return a set of CG-formatted readings for a tokenised sentence """
 	tokens = tokenised_sentence.splitlines()
 	sentence_lengths.append(len(tokens))
 	readings = ""
 	for i, token in enumerate([token.split("\t") for token in tokens]):
+		token = markup_check(token)
 		retrieved_readings = get_reading(total_tokens+i+1, [token[1], token[2]])
 		readings += retrieved_readings
 		#pre_cg_reading_counts[len(pre_cg_reading_counts.keys())+1] = len(retrieved_readings.strip().split("\n"))-1
@@ -816,6 +833,7 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 					readings += sentence_readings(tokens, total_tokens)
 					total_tokens += len(tokens.splitlines())
 		if output_format != None:
+			print("{}\n".format(markup))
 			print("From {} tokens:\n--- {} tokens were given readings\n------ {} tokens only have a single reading pre-CG\n--------- {} of which were definite tags (punctuation, symbols etc.)\n------ {} tokens have multiple readings pre-CG\n------ {} tokens have no readings pre-CG\n------ {} tokens without readings were assumed to be proper nouns\n--- {} tokens are still without readings (marked as 'unknown')\n".format(total_tokens, stats["pre-cg"]["with_readings"], stats["pre-cg"]["single_reading"], stats["pre-cg"]["definite_tag"], stats["pre-cg"]["multiple_readings"], stats["pre-cg"]["no_readings"], stats["pre-cg"]["assumed_proper"], stats["pre-cg"]["without_readings"]))
 		if vislcg3_location == None or vislcg3_location == "" or vislcg3_location == bytearray():
 			raise ValueError("VISL CG-3 could not be found, and is required to continue using CyTag. Please follow the instructions in the README file to install it\n")
