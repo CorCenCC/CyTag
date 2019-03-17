@@ -62,7 +62,7 @@ output = {"directory": None, "readings": None, "readingsPostCG": None, "unknown_
 
 sentence_lengths = []
 
-marking_up = False
+open_markup = 0
 markup = {}
 
 vislcg3_location = subprocess.Popen(["which", "vislcg3"], stdout=subprocess.PIPE).communicate()[0].strip()
@@ -537,10 +537,13 @@ def process_still_ambiguous(token_id, token, readings, token_position):
 	possible_lemmas = [x[1].replace("_", " ") for x in processed_readings]
 	possible_tags = [x[2].replace(" ", "") for x in processed_readings]
 	possible_basics = []
+	token_markup = ""
+	if str(token_id) in markup.keys():
+		token_markup = ",".join(markup[str(token_id)])
 	for tag in possible_tags:
 		basic = [x[0] for x in tag_categories if tag in x[1]][0] if len([x[0] for x in tag_categories if tag in x[1]]) > 0 else tag
 		possible_basics.append(basic)
-	processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, processed_readings[0][0], " | ".join(possible_lemmas), " | ".join(possible_basics), " | ".join(possible_tags))
+	processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t\t{}".format(token_id, token, processed_readings[0][0], " | ".join(possible_lemmas), " | ".join(possible_basics), " | ".join(possible_tags), token_markup)
 	return(processed_token)
 
 def process_multiple_reading(token_id, token, readings):
@@ -548,16 +551,19 @@ def process_multiple_reading(token_id, token, readings):
 	processed_token = ""
 	processed_readings = list_readings(readings)
 	position, lemma = processed_readings[0][0], processed_readings[0][1].replace("_", " ")
+	token_markup = ""
+	if str(token_id) in markup.keys():
+		token_markup = ",".join(markup[str(token_id)])
 	checked_tags = check_gazetteers(token)
 	if checked_tags != ["unk", "unk"]:
-		processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, position, lemma, checked_tags[0], checked_tags[1])
+		processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t\t{}".format(token_id, token, position, lemma, checked_tags[0], checked_tags[1], token_markup)
 		stats["post-cg"]["disambiguated"] += 1
 		stats["post-cg"]["ambiguous_gazetteer"] += 1
 	else:
 		if check_coverage == True:
 			if token in cy_coverage.keys():
 				tags = cy_coverage[token].split(":")
-				processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, position, lemma, tags[0], tags[1])
+				processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t\t{}".format(token_id, token, position, lemma, tags[0], tags[1], token_markup)
 				stats["post-cg"]["disambiguated"] += 1
 				stats["post-cg"]["in_coverage"] += 1
 			else:
@@ -573,27 +579,30 @@ def process_double_reading(token_id, token, readings):
 	processed_token = ""
 	processed_readings = list_readings(readings)
 	position, lemma = processed_readings[0][0], processed_readings[0][1].replace("_", " ")
+	token_markup = ""
+	if str(token_id) in markup.keys():
+		token_markup = ",".join(markup[str(token_id)])
 	if "E p b" in [x[2] for x in processed_readings] and "E p g" in [x[2] for x in processed_readings]:
 		checked_tags = check_gazetteers(token)
 		if checked_tags == ["unk", "unk"]:
-			processed_token = "{}\t{}\t{}\t{}\tE\tEp\t".format(token_id, token, position, lemma)
+			processed_token = "{}\t{}\t{}\t{}\tE\tEp\t\t{}".format(token_id, token, position, lemma, token_markup)
 			stats["post-cg"]["neutral_pns"] += 1
 			stats["post-cg"]["disambiguated"] += 1
 		else:
-			processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, position, lemma, checked_tags[0], checked_tags[1])
+			processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t\t{}".format(token_id, token, position, lemma, checked_tags[0], checked_tags[1], token_markup)
 			stats["post-cg"]["disambiguated"] += 1
 			stats["post-cg"]["pns_gazetteer"] += 1
 	elif [x[2] for x in processed_readings][0] == [x[2] for x in processed_readings][1]:
 		rich_tag = processed_readings[0][2].replace(" ", "")
 		basic_tag = [x[0] for x in tag_categories if rich_tag in x[1]][0] if len([x[0] for x in tag_categories if rich_tag in x[1]]) > 0 else rich_tag
-		processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, position, lemma, basic_tag, rich_tag)
+		processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t\t{}".format(token_id, token, position, lemma, basic_tag, rich_tag, token_markup)
 		stats["post-cg"]["disambiguated"] += 1
 		stats["post-cg"]["same_tag"] += 1
 	else:
 		if check_coverage == True:
 			if token in cy_coverage.keys():
 				tags = cy_coverage[token].split(":")
-				processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, position, lemma, tags[0], tags[1])
+				processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t\t{}".format(token_id, token, position, lemma, tags[0], tags[1], token_markup)
 				stats["post-cg"]["disambiguated"] += 1
 				stats["post-cg"]["in_coverage"] += 1
 			else:
@@ -607,11 +616,13 @@ def process_double_reading(token_id, token, readings):
 def process_single_reading(token_id, token, reading):
 	""" Return a token with a single reading as a string of tab-separated values """
 	processed_token = ""
-	position, lemma, mutation, basic_tag, rich_tag = "", "", "", "", ""
+	position, lemma, mutation, basic_tag, rich_tag, token_markup = "", "", "", "", "", ""
 	for quoted_lemma in re.findall(r'\"(.+?)\"', reading):
 		reading = reading.replace(quoted_lemma, quoted_lemma.replace(" ", "_"))
 	info = re.split(r"\s+", reading.strip())
 	position, lemma = info[1][1:-1], info[0][1:-1].replace("_", " ")
+	if str(token_id) in markup.keys():
+		token_markup = ",".join(markup[str(token_id)])
 	if info[-1] != "unk":
 		if info[-2] == "+":
 			mutation = "+{}".format(info[-1])
@@ -623,18 +634,18 @@ def process_single_reading(token_id, token, reading):
 		pos_tag = " ".join(info[3:])
 		rich_tag = pos_tag.replace(" ", "")
 		basic_tag = [x[0] for x in tag_categories if rich_tag in x[1]][0] if len([x[0] for x in tag_categories if rich_tag in x[1]]) > 0 else rich_tag
-		processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t{}".format(token_id, token, position, lemma, basic_tag, rich_tag, mutation)
+		processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(token_id, token, position, lemma, basic_tag, rich_tag, mutation, token_markup)
 		stats["post-cg"]["disambiguated"] += 1
 		stats["post-cg"]["one_reading"] += 1
 	else:
 		checked_tags = check_gazetteers(token)
 		if checked_tags == ["unk", "unk"]:
-			processed_token = "{}\t{}\t{}\t{}\tunk\tunk\t".format(token_id, token, position, lemma)
+			processed_token = "{}\t{}\t{}\t{}\tunk\tunk\t\t{}".format(token_id, token, position, lemma, token_markup)
 			stats["post-cg"]["undisambiguated"] += 1
 			if output["unknown_words"] != None:
 				new_unknown_words.append(token)
 		else:
-			processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, position, lemma, checked_tags[0], checked_tags[1])
+			processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t\t{}".format(token_id, token, position, lemma, checked_tags[0], checked_tags[1], token_markup)
 			stats["post-cg"]["disambiguated"] += 1
 			stats["post-cg"]["unknown_gazetteer"] += 1
 		stats["post-cg"]["unknown"] += 1
@@ -650,6 +661,8 @@ def append_xml_token(token_parts, reading_count):
 	token.attrib["rich_pos"] = token_parts[5]
 	if token_parts[6] != "":
 		token.attrib["mutation"] = token_parts[6]
+	if token_parts[0] in markup.keys():
+		token.attrib["markup"] = ",".join(markup[token_parts[0]])
 	token.attrib["position"] = token_parts[2]
 	token.text = token_parts[1]
 	#xml_tree = output["tree"]
@@ -721,17 +734,42 @@ def run_cg(cg_readings, vislcg3_location):
 	cg_output = cg_process.communicate(input=cg_readings.encode("utf-8"))[0]
 	return(cg_output.decode("utf-8"))
 
+def markup_opening_tag_check(token_id, token):
+	""" Recursively check the token for opening markup tags """
+	global open_markup
+	while token.startswith("<") and ">" in token:
+		open_markup += 1
+		if token_id not in markup.keys():
+			markup[token_id] = [token[1:token.index(">")]]
+		else:
+			markup[token_id].append(token[1:token.index(">")])
+		token = markup_opening_tag_check(token_id, token[token.index(">")+1:])
+	return token
+
+def markup_closing_tag_check(token_id, token):
+	""" Recursively check the token for closing markup tags """
+	global open_markup
+	while token.endswith(">") and "</" in token:
+		if token_id not in markup.keys():
+			markup[token_id] = markup[str(int(token_id)-1)][:open_markup]
+		open_markup -= 1
+		token = markup_closing_tag_check(token_id, token[:token.index("</")])
+	return token
+
 def markup_check(token):
 	""" Find and record markup in a given token """
-	global marking_up
-	if token[1].startswith("<") and ">" in token[1] and marking_up == False:
-		markup[token[0]] = "type"
-		marking_up = True
-	elif token[1].endswith(">") and "</" in token[1] and marking_up == True:	
-		markup[token[0]] = markup[str(int(token[0])-1)]
-		marking_up = False
-	elif marking_up == True:
-		markup[token[0]] = markup[str(int(token[0])-1)]
+	global open_markup
+	if token[1].startswith("<") and ">" in token[1]:
+		token[1] = markup_opening_tag_check(token[0], token[1])
+		if token[1].endswith(">") and "</" in token[1]:
+			token[1] = markup_closing_tag_check(token[0], token[1])
+	elif token[1].endswith(">") and "</" in token[1] and open_markup > 0:	
+		token[1] = markup_closing_tag_check(token[0], token[1])
+	else:
+		if open_markup > 0:
+			print(token, open_markup)
+			if str(int(token[0])-1) in markup.keys():				
+				markup[token[0]] = markup[str(int(token[0])-1)][:open_markup]
 	return(token)
 
 def sentence_readings(tokenised_sentence, total_tokens):
@@ -833,7 +871,6 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 					readings += sentence_readings(tokens, total_tokens)
 					total_tokens += len(tokens.splitlines())
 		if output_format != None:
-			print("{}\n".format(markup))
 			print("From {} tokens:\n--- {} tokens were given readings\n------ {} tokens only have a single reading pre-CG\n--------- {} of which were definite tags (punctuation, symbols etc.)\n------ {} tokens have multiple readings pre-CG\n------ {} tokens have no readings pre-CG\n------ {} tokens without readings were assumed to be proper nouns\n--- {} tokens are still without readings (marked as 'unknown')\n".format(total_tokens, stats["pre-cg"]["with_readings"], stats["pre-cg"]["single_reading"], stats["pre-cg"]["definite_tag"], stats["pre-cg"]["multiple_readings"], stats["pre-cg"]["no_readings"], stats["pre-cg"]["assumed_proper"], stats["pre-cg"]["without_readings"]))
 		if vislcg3_location == None or vislcg3_location == "" or vislcg3_location == bytearray():
 			raise ValueError("VISL CG-3 could not be found, and is required to continue using CyTag. Please follow the instructions in the README file to install it\n")

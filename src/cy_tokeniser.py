@@ -36,22 +36,32 @@ gazetteers = load_gazetteers()
 
 contractions_and_prefixes = {}
 with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
-	contractions_and_prefixes = json.load(contractionsprefixes_json) 
+	contractions_and_prefixes = json.load(contractionsprefixes_json)
 
-def remove_markup(tokens):
-	""" Remove markup tags (opening, closing, or both) from tokens """
-	for i, token in enumerate(tokens):
-		if token[:6] == "<anon>":
-			tokens[i] = token[6:]
-		if token[-7:] == "</anon>":
-			tokens[i] = token[:-7]
-	return(tokens)
+corcencc_markup = {
+	"opening": [ "<anon>",
+			     "<rhegi>",
+			     "<b>",
+			     "<i>",
+			     "<title>",
+			     "<en>", "<fr>", "<es>", "<de>",
+			     "<it>", "<pt>", "<ru>", "<nl>"
+			   ],
+	"closing": [ "</anon>",
+			     "</rhegi>",
+			     "</b>",
+			     "</i>",
+			     "</title>",
+			     "</en>", "</fr>", "</es>", "</de>",
+			     "</it>", "</pt>", "</ru>", "</nl>"
+			   ]
+}
 
 def check_punctuation(token, total_tokens, token_id):
 	""" Separate punctuation from tokens """
 	try:
-		if token[:6] == "<anon>" or token[-7:] == "</anon>":
-			return(complex_split_anon(token, total_tokens, token_id, 1))
+		if token.startswith(tuple(corcencc_markup["opening"])) or token.endswith(tuple(corcencc_markup["closing"])):
+			return(complex_split_markup(token, total_tokens, token_id, 1))
 		if len(re.findall(r"(^[.,:;\"\'!?<>{}()\]\[]|[.,:;\"\'!?<>{}()\]\[]$)", token)) < 1 or token in re.findall("(^[.,:;\"\'!?<>{}()\]\[]|[.,:;\"\'!?<>{}()\]\[]$)", token) or (len(re.findall("(?<![A-Z0-9_])([A-Z0-9_][.](\s*[A-Z0-9_][.])*)", token)) > 0 and (re.findall("(?<![A-Z0-9_])([A-Z0-9_][.](\s*[A-Z0-9_][.])*)", token)[0][0] == token)) or token in gazetteers["abbreviations"] or token in contractions_and_prefixes.keys():
 			return([token])
 		elif len(re.findall(r"[.]{2,}", token)) > 0:
@@ -73,8 +83,8 @@ def check_punctuation(token, total_tokens, token_id):
 
 def separate_elisions(token, total_tokens, token_id):
 	""" Separate tokens containing elisions """
-	if token[:6] == "<anon>" or token[-7:] == "</anon>":
-		return(complex_split_anon(token, total_tokens, token_id, 2))
+	if token.startswith(tuple(corcencc_markup["opening"])) or token.endswith(tuple(corcencc_markup["closing"])):
+		return(complex_split_markup(token, total_tokens, token_id, 2))
 	for term in contractions_and_prefixes.keys():
 		if contractions_and_prefixes[term][0] == "contraction":
 			if term[-1:] == "'" and len(re.findall(r"^("+term+")", token)) > 0:
@@ -104,12 +114,46 @@ def split_dashes(token):
 
 def separate_symbols(token, total_tokens, token_id):
 	""" Seperate tokens containing symbols """
-	if token[:6] == "<anon>" or token[-7:] == "</anon>":
-		return(complex_split_anon(token, total_tokens, token_id, 3))
+	if token.startswith(tuple(corcencc_markup["opening"])) or token.endswith(tuple(corcencc_markup["closing"])):
+		return(complex_split_markup(token, total_tokens, token_id, 3))
 	if len(re.findall(r"([^\s^.,:;!?\-\'\"<>{}()\[\]^\w])", token)) > 0 and "http" not in token and "www." not in token: 
 		separated = re.split(r"([^\s^.,;:!?\-\'\"<>{}()\[\]^\w])", token)
 		separated = list(filter(None, separated))
 		return(separated)
+	else:
+		return([token])
+
+def complex_split_markup(token, total_tokens, token_id, process):
+	""" Split apart complicated tokens when they're enclosed within some kind of markup tags (opening, closing, or both) """
+	markup_separated = []
+	stripped_token, opening_tag, closing_tag = "", "", ""
+	if token.startswith(tuple(corcencc_markup["opening"])) and token.endswith(tuple(corcencc_markup["closing"])):
+		stripped_token = token[token.index(">")+1:token.index("</")]
+		opening_tag, closing_tag = token[:token.index(">")+1], token[token.index("</"):]
+	elif token.startswith(tuple(corcencc_markup["opening"])) and not token.endswith(tuple(corcencc_markup["closing"])):
+		stripped_token = token[token.index(">")+1:]
+		opening_tag = token[:token.index(">")+1]
+	elif not token.startswith(tuple(corcencc_markup["opening"])) and token.endswith(tuple(corcencc_markup["closing"])):
+		stripped_token = token[:token.index("</")]
+		closing_tag = token[token.index("</"):]
+	separated_tokens = []
+	if process == 1:
+		separated_tokens = check_punctuation(stripped_token, total_tokens, token_id)
+	elif process == 2:
+		separated_tokens = separate_elisions(stripped_token, total_tokens, token_id)
+	elif process == 3:
+		separated_tokens = separate_symbols(stripped_token, total_tokens, token_id)
+	if len(separated_tokens) > 1:
+		markup_separated = separated_tokens
+		if token.startswith(tuple(corcencc_markup["opening"])) and token.endswith(tuple(corcencc_markup["closing"])):
+			markup_separated[0] = "{}{}".format(opening_tag, markup_separated[0])
+			markup_separated[-1] = "{}{}".format(markup_separated[-1], closing_tag)
+		elif token.startswith(tuple(corcencc_markup["opening"])) and not token.endswith(tuple(corcencc_markup["closing"])):
+			markup_separated[0] = "{}{}".format(opening_tag, markup_separated[0])
+		elif not token.startswith(tuple(corcencc_markup["opening"])) and token.endswith(tuple(corcencc_markup["closing"])):
+			markup_separated[-1] = "{}{}".format(markup_separated[-1], closing_tag)
+	if len(markup_separated) > 1:
+		return(markup_separated)
 	else:
 		return([token])
 
@@ -175,7 +219,6 @@ def tokenise(sentence, total_sentences=None, total_tokens=None):
 	if sentence[-1:] == "." and sentence[-2:] != " .":
 		sentence = "{}{}".format(sentence[:-1], " .")
 	tokens = token_split(sentence, total_tokens)
-	#tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
 	return(split_tokens)
