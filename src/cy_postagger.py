@@ -436,12 +436,12 @@ def handle_empty_lookup(token):
 		reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if len(readings) > 0:
 			count_readings = True
-	elif token[0][-1:] == ["a", "â", "e", "ê", "i", "î", "o", "ô", "u", "û", "w", "ŵ", "y", "ŷ"]:
+	elif token[0][-1:] in ["a", "â", "e", "ê", "i", "î", "o", "ô", "u", "û", "w", "ŵ", "y", "ŷ"]:
 		readings = lookup_multiple_readings(["{}f".format(token[0])])
 		reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if len(readings) > 0:
 			count_readings = True
-	elif token[0][-1:] == ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] == ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
+	elif token[0][-1:] in ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] in ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
 		readings = lookup_multiple_readings(["{}r".format(token[0]), "{}l".format(token[0])])
 		reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if len(readings) > 0:
