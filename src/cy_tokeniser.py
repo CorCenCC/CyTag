@@ -71,7 +71,6 @@ def token_split(sent, total_tokens):
 	return(tokens)
 
 def check_token(token):
-	print("TOKEN: ", token)
 	### Words tagged as English (<en>point</en>) should be
 	### returned with their tagging so that the postagger
 	### can tag them correctly.
@@ -197,7 +196,6 @@ def check_token(token):
 		if token.lower() in cy_lexicon or token.lower() in gazetteers:
 			return [token]
 		token_parts = re.split("(-)", token)
-		print(token_parts)
 		if len(token_parts) == 3:
 			result = check_token(token_parts[0]) + check_token(token_parts[1])
 			return result

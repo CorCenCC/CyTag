@@ -204,7 +204,9 @@ morphological_table = [["Egu", ["E", "g", "u"]],
 						["Banmedd3gu", ["Ban", "medd", "3", "g", "u"]],
 						["Banmedd3du", ["Ban", "medd", "3", "d", "u"]],
 						["Banmedd3ll", ["Ban", "medd", "3", "ll"]],
+					### Ymadrodd - a tag for lemmas representing more than one part of speech, e.g. "'s'na'm" - "does yna ddim" (= "there is/are not")
 						["Ymadr", ["Ymadr"]],
+					### Anon - a tag for Anonymized data: the contents of <anon> tags in the CorCenCC data may range from a telephone number to a single name to a complete name (title + given name + surname) to an entire address, so part of speech is not easy to assign
 						["Anon",["Anon"]]
 						]
 
@@ -349,7 +351,7 @@ def lookup_mutation(input_token):
 		unmutated.append(("p{}".format(token[1:]), "sm"))
 	if len(token) > 1 and  token[:1] == "d" and token[1] != "d":
 		unmutated.append(("t{}".format(token[1:]), "sm"))
-	if len(token) > 1 and  token[:1] == "f" and not token[1] == "f":
+	if len(token) > 1 and  token[:1] == "f" and token[1] != "f":
 		unmutated.append(("b{}".format(token[1:]), "sm"))
 		unmutated.append(("m{}".format(token[1:]), "sm"))
 	if len(token) > 1 and token[:1] == "l" and not token[1] == "l":
@@ -368,9 +370,9 @@ def lookup_mutation(input_token):
 		unmutated.append(("o{}".format(token[2:]), "hm"))
 	if len(token) > 2 and token[:2] == "hu":
 		unmutated.append(("u{}".format(token[2:]), "hm"))
-	if len(token) > 2 and token[:2] == "hw" and len(token) > 3:
+	if len(token) > 3 and token[:2] == "hw":
 		unmutated.append(("w{}".format(token[2:]), "hm"))
-	if len(token) > 2 and token[:2] == "hy" and len(token) > 3:
+	if len(token) > 3 and token[:2] == "hy":
 		unmutated.append(("y{}".format(token[2:]), "hm"))
 	if len(token) > 2 and token[:1] in ["a", "e", "i", "o", "u", "w", "y"] and len(token) > 2:
 		unmutated.append(("g{}".format(token), "sm"))
@@ -379,7 +381,7 @@ def lookup_mutation(input_token):
 		for mutation in unmutated:
 			capitals.append(("{}{}".format(mutation[0][:1].upper(), mutation[0][1:]), mutation[1]))
 		unmutated = unmutated + capitals
-	return(unmutated)
+	return unmutated 
 
 def tag_morphology(tag):
 	""" For a given (rich) POS tag, split it into a list of its morphological elements and return it """

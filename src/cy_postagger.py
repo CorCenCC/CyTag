@@ -146,8 +146,14 @@ def lookup_multiple_readings(tokens):
 			readings = readings + [[token, [x["pos_enriched"]], x["lemma"], [x["lemma_en"]], ""] for x in cy_lexicon[token]]
 		elif token.lower() in cy_lexicon:
 			readings = readings + [[token.lower(), [x["pos_enriched"]], x["lemma"], [x["lemma_en"]], ""] for x in cy_lexicon[token.lower()]]
-		possible_mutations = lookup_mutation(token) # NOTE - It looks like this needs finishing, nothing appears to be done with the list of possible mutations...
-	return(readings)
+		possible_mutations = lookup_mutation(token) 
+		if len(possible_mutations) > 0:
+			for mutation in possible_mutations:
+				if mutation[0] in cy_lexicon:
+					mutation_readings = [[mutation[0], 
+					[x["pos_enriched"]], x["lemma"], [x["lemma_en"]], mutation[1]] for x in cy_lexicon[mutation[0]]]
+					readings = readings + mutation_readings
+	return readings
 
 def format_en_lemmas(lemmas):
 	""" Format a list of English lemmas as a string to be included as part of a single Welsh CG reading """
@@ -171,7 +177,7 @@ def format_multireading_lookup(readings, token, token_position):
 	else:
 		reading_string += "\t\"{}\" {{{}}} {}\n".format(token, token_position, "unk")
 		stats["pre-cg"]["without_readings"] += 1
-	return(reading_string)
+	return reading_string
 
 def handle_empty_lookup(token):
 	""" Produce readings for tokens that didn't return anything during a regular lookup, focusing on:
@@ -306,8 +312,17 @@ def check_gazetteers(token):
 		elif token in gazetteers["surnames"] or token in gazetteers["places"]:
 			tags.append("Ep")
 	else:
-		tags = ["unk", "unk"]
-	return(tags)
+		unmutated_tokens = lookup_mutation(token)
+		if len(unmutated_tokens) != 0:
+			for unmut_tok in unmutated_tokens:
+				if unmut_tok[0] in gazetteers["givennames_m"] or unmut_tok[0] in gazetteers["givennames_f"] or unmut_tok[0] in gazetteers["surnames"] or unmut_tok[0] in gazetteers["places"]:
+
+					tags = ["Ep", unmut_tok[1]]
+				else:
+					tags = ["unk", "unk"]
+		else:
+			tags = ["unk", "unk"]
+	return tags
 
 def list_readings(readings):
 	""" Convert readings in string (VISL CG-3 output) format to a list of reading and their component parts """
@@ -436,6 +451,10 @@ def process_single_reading(token_id, token, reading):
 			stats["post-cg"]["undisambiguated"] += 1
 			if output["unknown_words"] != None:
 				new_unknown_words.append(token)
+		elif checked_tags[0] == "Ep":
+			processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t+{}".format(token_id, token, position, lemma, "E", "Ep", checked_tags[1])
+			stats["post-cg"]["disambiguated"] += 1
+			stats["post-cg"]["unknown_gazetteer"] += 1
 		else:
 			processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t".format(token_id, token, position, lemma, checked_tags[0], checked_tags[1])
 			stats["post-cg"]["disambiguated"] += 1
