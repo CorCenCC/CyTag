@@ -462,10 +462,6 @@
     "prefix",
     []
   ],
-  "try": [
-    "prefix",
-    []
-  ],
   "dir-": [
     "prefix",
     []
@@ -473,5 +469,10 @@
   "hunan-": [
     "prefix",
     []
+  ],
+  "anti-": [
+    "prefix",
+    []
   ]
+
 }

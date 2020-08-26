@@ -62,7 +62,6 @@ def token_split(sent, total_tokens):
 		""" Normalize different kinds of potential apostrophe/single quotation and dash/hyphen characters """
 		sent_apos = (re.sub(r"[’‘`]", "'", sent))
 		sentence = (re.sub(r"[‑—–]", "-", sent_apos))
-
 		regexed_tokens = re.split(r"\s(?!\S[.])|(?<!\S[.])\s", sentence)
 		token_list = list(filter(None, regexed_tokens))
 		token_list = remove_markup(token_list)
@@ -72,6 +71,7 @@ def token_split(sent, total_tokens):
 	return(tokens)
 
 def check_token(token):
+	print("TOKEN: ", token)
 	### Words tagged as English (<en>point</en>) should be
 	### returned with their tagging so that the postagger
 	### can tag them correctly.
@@ -192,10 +192,42 @@ def check_token(token):
 							result = result + check_token(s)
 			return result
 	### hyphens
-	if len(re.findall("-", token)) != 0:
-		if token in contractions_and_prefixes or token.lower() in contractions_and_prefixes or token.lower() in cy_lexicon:
+	if token.find("-") != -1:
+		result = []
+		if token.lower() in cy_lexicon or token.lower() in gazetteers:
 			return [token]
-		if token[0] == "-":
+		token_parts = re.split("(-)", token)
+		print(token_parts)
+		if len(token_parts) == 3:
+			result = check_token(token_parts[0]) + check_token(token_parts[1])
+			return result
+		for i, tok in enumerate(token_parts):
+			if not tok.isalpha() and tok != "-":
+				if i == 0:
+					first_part = token_parts[0]
+					last_part = "".join(token_parts[2:])
+					result = check_token(first_part) + ["-"] + check_token(last_part)
+				elif i == len(token_parts) - 1:
+					first_part = "".join(token_parts[:-2])
+					last_part = token_parts[i]
+					result = check_token(first_part) + ["-"] + check_token(last_part)
+				else:
+					first_part = "".join(token_parts[:i-2])
+					middle_part = token_parts[i]
+					last_part = "".join(token_parts[i+2:])
+					result = check_token(first_part) + ["-"] + check_token(middle_part) + ["-"] + check_token(last_part)
+				return result
+		token_parts_nohyphens = token.lower().split("-")
+		if "".join(token_parts_nohyphens) in cy_lexicon or "".join(token_parts_nohyphens) in gazetteers or " ".join(token_parts_nohyphens) in cy_lexicon or " ".join(token_parts_nohyphens) in gazetteers:
+			return [token]
+		elif token_parts_nohyphens[0] + "-" in contractions_and_prefixes:
+			first = "".join(token_parts[0:3])
+			rest = "".join(token_parts[3:])
+			result = [first]
+			if rest != "":
+				result += check_token(rest)
+			return result
+		elif token[0] == "-":
 			if not token[1:].isalpha():
 				result = []
 				split = check_token(token[1:])
@@ -269,9 +301,9 @@ def check_token(token):
 	if match_mid is not None:
 		return check_token(match_mid.group(1)) + check_token(match_mid.group(2)) + check_token(match_mid.group(3))
 	### !!!!?:!! => ! !!!?:!! 
-	if token[0] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "—", "–", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
+	if token[0] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
 		return [token[0]] + check_token(token[1:])
-	if token[-1] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "—", "–", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
+	if token[-1] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
 		return check_token(token[0:-1]) + [token[-1]]
 	### numerical strings
 	if token[0].isnumeric():

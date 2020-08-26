@@ -20,6 +20,8 @@ Developed at Cardiff University as part of the CorCenCC project (www.corcencc.or
 
 2016-2018 Steve Neale <steveneale3000@gmail.com, NealeS2@cardiff.ac.uk>, Kevin Donnelly <kevin@dotmon.com>
 
+2020 Bethan Tovey-Walsh <bytheway@linguacelta.com>
+
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or (at your option) any later version.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
@@ -75,7 +77,7 @@ contractions_and_prefixes = {}
 with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
 	contractions_and_prefixes = json.load(contractionsprefixes_json)
 
-""" A simple swith to use the 'check_coverage' options when tagging (i.e. guess untagged words using entries in the tag-token coverage and tag-sequence dictionaries)
+""" A simple switch to use the 'check_coverage' options when tagging (i.e. guess untagged words using entries in the tag-token coverage and tag-sequence dictionaries)
 	--- NOTE: Leave this as True, unless producing tagged output for making new tag-token coverage and tag-sequence dictionaries
 """
 check_coverage = True
@@ -175,15 +177,17 @@ def handle_empty_lookup(token):
 	""" Produce readings for tokens that didn't return anything during a regular lookup, focusing on:
 		---	Tokens that are capitalised (that we assume to be proper nouns)
 		--- Tokens that we know to be common contractions
+		--- Tokens with hyphens (which may appear in the lexicon or gazetteers without hyphens, or with spaces instead of hyphens)
 		--- Tokens that end with an apostrophe (last letter may have been cut off)
 		--- Tokens that end in a vowel (and may have had 'f' cut off the end)
 		--- Tokens that end in a consonant (and may have had 'r' or 'l' cut off the end)
 	"""
 	count_readings = False
 	reading_string = "" 
+	token_parts = token[0].lower().split("-")
 	if token[0] in contractions_and_prefixes.keys():
 		if contractions_and_prefixes[token[0]][0] == "contraction":
-			readings = lookup_multiple_readings(contractions_and_prefixes[token[0]][1])					
+			readings = lookup_multiple_readings(contractions_and_prefixes[token[0]][1])	
 			reading_string += format_multireading_lookup(readings, token[0], token[1])
 			if len(readings) > 0:
 				count_readings = True
@@ -191,6 +195,21 @@ def handle_empty_lookup(token):
 		if contractions_and_prefixes[token[0].lower()][0] == "contraction":
 			readings = lookup_multiple_readings(contractions_and_prefixes[token[0].lower()][1])
 			reading_string += format_multireading_lookup(readings, token[0], token[1])
+			if len(readings) > 0:
+				count_readings = True
+	elif token[0].find("-") != -1:
+		no_spaces = "".join(token_parts)
+		spaces = " ".join(token_parts)
+		readings = lookup_multiple_readings([no_spaces, spaces])
+		reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if len(readings) > 0:
+			count_readings = True		
+		elif len(token_parts) == 2 and (token_parts[0] + "-") in contractions_and_prefixes:
+			readings = lookup_multiple_readings([token_parts[1]])
+			for reading in readings:
+				morphology = tag_morphology(reading[1][0])
+				tags = " ".join(tag_morphology(reading[1][0]))
+				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0].lower(), token[1], tags, "-")
 			if len(readings) > 0:
 				count_readings = True
 	elif token[0][-1:] == "'":
