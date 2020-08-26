@@ -17,6 +17,8 @@ Developed at Cardiff University as part of the CorCenCC project (www.corcencc.or
 
 2016-2018 Steve Neale <steveneale3000@gmail.com, NealeS2@cardiff.ac.uk>
 
+2018-2020 Bethan Tovey-Walsh <bytheway@linguacelta.com>
+
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or (at your option) any later version.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
@@ -25,14 +27,16 @@ You should have received a copy of the GNU General Public License along with thi
 import sys
 import os
 import re
-
 import json
 
 from cy_textsegmenter import *
 from cy_sentencesplitter import *
 from shared.load_gazetteers import *
+from shared.load_lexicon import *
+from shared.reference_lists import *
 
 gazetteers = load_gazetteers()
+cy_lexicon = load_lexicon()
 
 contractions_and_prefixes = {}
 with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
@@ -41,141 +45,276 @@ with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.di
 def remove_markup(tokens):
 	""" Remove markup tags (opening, closing, or both) from tokens """
 	for i, token in enumerate(tokens):
-		if token[:6] == "<anon>":
-			tokens[i] = token[6:]
-		if token[-7:] == "</anon>":
-			tokens[i] = token[:-7]
+		if token[:3] in ["<D>", "<N>"]:
+			tokens[i] = tokens[i][3:]
+		if token[-4:] in ["</D>", "</N>"]:
+			tokens[i] = tokens[i][:-4]	
+		if token[:7] == "<rhegi>":
+			tokens[i] = tokens[i][7:]
+		if token[-8:] == "</rhegi>":
+			tokens[i] = tokens[i][:-7]		
 	return(tokens)
 
-def check_punctuation(token, total_tokens, token_id):
-	""" Separate punctuation from tokens """
-	try:
-		if token[:6] == "<anon>" or token[-7:] == "</anon>":
-			return(complex_split_anon(token, total_tokens, token_id, 1))
-		if len(re.findall(r"(^[.,:;\"\'!?<>{}()\]\[]|[.,:;\"\'!?<>{}()\]\[]$)", token)) < 1 or token in re.findall("(^[.,:;\"\'!?<>{}()\]\[]|[.,:;\"\'!?<>{}()\]\[]$)", token) or (len(re.findall("(?<![A-Z0-9_])([A-Z0-9_][.](\s*[A-Z0-9_][.])*)", token)) > 0 and (re.findall("(?<![A-Z0-9_])([A-Z0-9_][.](\s*[A-Z0-9_][.])*)", token)[0][0] == token)) or token in gazetteers["abbreviations"] or token in contractions_and_prefixes.keys():
-			return([token])
-		elif len(re.findall(r"[.]{2,}", token)) > 0:
-			if re.findall(r"[.]{2,}", token)[0] == token:
-				return([token])
-			else:
-				ellipsis = re.findall(r"[.]{2,}", token)[0]
-				return([token[:-len(ellipsis)], ellipsis])
-		else:
-			tokens = re.split(r"(^[.,:;\"\'!?<>{}()\]\[]|[.,:;\"\'!?<>{}()\]\[]$)", token)
-			tokens = list(filter(None, tokens))
-			for i, new_token in enumerate(tokens):
-				if new_token not in gazetteers["acronyms"]:
-					del tokens[i]
-					tokens[i:i] = check_punctuation(new_token, total_tokens, token_id)
-			return(tokens)
-	except:
-		print("Error checking punctuation for token:", token)
-
-def separate_elisions(token, total_tokens, token_id):
-	""" Separate tokens containing elisions """
-	if token[:6] == "<anon>" or token[-7:] == "</anon>":
-		return(complex_split_anon(token, total_tokens, token_id, 2))
-	for term in contractions_and_prefixes.keys():
-		if contractions_and_prefixes[term][0] == "contraction":
-			if term[-1:] == "'" and len(re.findall(r"^("+term+")", token)) > 0:
-				separated = re.split(r"^("+term+")", token)
-				separated = list(filter(None, separated))
-				return(separated)
-			if term[:1] == "'" and len(re.findall(r"("+term+")$", token)) > 0:
-				separated = re.split(r"("+term+")$", token)
-				separated = list(filter(None, separated))
-				return(separated)
-	else:
-		return([token])
-
-def split_dashes(token):
-	""" Separate tokens containing dashes """
-	separated = [token]
-	if "-" in token and token != "-" and not re.match(r"\d+(-)\d+", token):
-		prefixes = [prefix for prefix in contractions_and_prefixes.keys() if contractions_and_prefixes[prefix][0] == "prefix"]
-		if token[0:token.index("-")+1] not in prefixes and token[0:token.index("-")+1].lower() not in prefixes:
-			if len(re.findall("(-)", token)) == 1:
-				token_parts = token.split("-")
-				if token_parts[0] != "" and token_parts[1] != "":
-					if token_parts[0][0].isupper() and token_parts[1][0].isupper():
-						separated = re.split("(-)", token)
-	return(separated)
-
-
-def separate_symbols(token, total_tokens, token_id):
-	""" Seperate tokens containing symbols """
-	if token[:6] == "<anon>" or token[-7:] == "</anon>":
-		return(complex_split_anon(token, total_tokens, token_id, 3))
-	if len(re.findall(r"([^\s^.,:;!?\-\'\"<>{}()\[\]^\w])", token)) > 0 and "http" not in token and "www." not in token: 
-		separated = re.split(r"([^\s^.,;:!?\-\'\"<>{}()\[\]^\w])", token)
-		separated = list(filter(None, separated))
-		return(separated)
-	else:
-		return([token])
-
-def complex_split_anon(token, total_tokens, token_id, process):
-	""" Split apart complicated tokens when they're enclosed within some kind of markup tags (opening, closing, or both) """
-	anon_separated = []
-	stripped_token = ""
-	if token[:6] == "<anon>" and token[-7:] == "</anon>":
-		stripped_token = token[6:-7]
-	elif token[:6] == "<anon>" and token[-7:] != "</anon>":
-		stripped_token = token[6:]
-	elif token[:6] != "<anon>" and token[-7:] == "</anon>":
-		stripped_token = token[:-7]
-	separated_tokens = []
-	if process == 1:
-		separated_tokens = check_punctuation(stripped_token, total_tokens, token_id)
-	elif process == 2:
-		separated_tokens = separate_elisions(stripped_token, total_tokens, token_id)
-	elif process == 3:
-		separated_tokens = separate_symbols(stripped_token, total_tokens, token_id)
-	if len(separated_tokens) > 1:
-		if token[:6] == "<anon>" and token[-7:] == "</anon>":
-			anon_separated = ["<anon>{}</anon>".format(x) for x in separated_tokens]
-		elif token[:6] == "<anon>" and token[-7:] != "</anon>":
-			anon_separated = ["<anon>{}".format(x) for x in separated_tokens]
-		elif token[:6] != "<anon>" and token[-7:] == "</anon>":
-			anon_separated = ["{}</anon>".format(x) for x in separated_tokens]
-	if len(anon_separated) > 1:
-		return(anon_separated)
-	else:
-		return([token])
-
-def complex_split(tokens, total_tokens):
-	""" Split complicated tokens, such as those containing punctuation, elision, dashes, and symbols """
-	for i in range(1, 5):
-		for j, token in enumerate(tokens):
-			separated_tokens = []
-			if i == 1:
-				separated_tokens = check_punctuation(token, total_tokens, j)
-			elif i == 2:
-				separated_tokens = separate_elisions(token, total_tokens, j)
-			elif i == 3:
-				separated_tokens = split_dashes(token)
-			elif i == 4:
-				separated_tokens = separate_symbols(token, total_tokens, j)
-			if len(separated_tokens) > 1:
-				del tokens[j]
-				tokens[j:j] = separated_tokens
-	return(tokens)
-
-def token_split(sentence, total_tokens):
+def token_split(sent, total_tokens):
 	""" Use regular expressions to split a sentence into a list of tokens, before handling more complex cases """
 	tokens = []
-	if sentence != "":
+	if sent != "":
+		""" Normalize different kinds of potential apostrophe/single quotation and dash/hyphen characters """
+		sent_apos = (re.sub(r"[’‘`]", "'", sent))
+		sentence = (re.sub(r"[‑—–]", "-", sent_apos))
+
 		regexed_tokens = re.split(r"\s(?!\S[.])|(?<!\S[.])\s", sentence)
 		token_list = list(filter(None, regexed_tokens))
-		tokens = complex_split(token_list, total_tokens)
+		token_list = remove_markup(token_list)
+		for i, token in enumerate(token_list):
+			if token != '':
+				tokens = tokens + check_token(token)
 	return(tokens)
+
+def check_token(token):
+	### Words tagged as English (<en>point</en>) should be
+	### returned with their tagging so that the postagger
+	### can tag them correctly.
+	match_english = re.match(r"^(<en( gair=\"[a-zA-Z]+\")?>([\w'\-]+)</en>)(.*)$", token)
+	if match_english is not None:
+		if match_english.group(4) != "":
+			return [match_english.group(1)] + check_token(match_english.group(4))
+		else:
+			return [match_english.group(1)]
+	match_anon = re.match(r"^(<anon>[\w'\-]+</anon>)(.*)$", token)
+	if match_anon is not None:
+		if match_anon.group(2) != "":
+			return [match_anon.group(1)] + check_token(match_anon.group(2))
+		else:
+			return [match_anon.group(1)]
+	if len(re.findall(r"[\\/]", token)) > 0:
+		if len(set(token)) == 1:
+			return [token]
+		result = []
+		split = list(filter(None, re.split(r"([\\/])", token)))
+		for s in split:
+			if set(s) in ["\\", "/"]:
+				result.append(s)
+			else:
+				result += check_token(s)
+		return result
+	### !!!! aaaaa Ffffff 
+	if len(set(token.lower())) == 1:
+		return [token]
+	### gair 100
+	if token.isalpha() or token.isnumeric():
+		return [token]
+	### word09:!!!!!!() => word09  :!!!!!!()
+	match_end = re.match(r"^([\w']+)([^\w'\-¢%]+)$", token)
+	if match_end is not None:
+		return check_token(match_end.group(1)) + check_token(match_end.group(2))
+	### !!!!!!()word_90 => !!!!!!() word_90
+	match_start = re.match(r"^([^\w\-'#@¥£€$]+)([\w']+)$", token)
+	if match_start is not None:
+		return check_token(match_start.group(1)) + check_token(match_start.group(2))
+	### hashtags
+	if len(re.findall(r"#", token)) > 0:
+		if re.match(r"#\w+", token):
+			return [token]
+		hashtag_front = re.match(r"^(#\w+)([^\w].*)$", token)
+		if hashtag_front is not None:
+			return [hashtag_front.group(1)] + check_token(hashtag_front.group(2))
+		hashtag_end = re.match(r"^(.*)(#[\w]+)$", token)
+		if hashtag_end is not None:
+			return check_token(hashtag_end.group(1)) + [hashtag_end.group(2)]
+		hashtag_mid = re.match(r"^(.+)(#\w+)([^\w].*)$", token)
+		if hashtag_mid is not None:
+			return check_token(hashtag_mid.group(1)) + [hashtag_mid.group(2)] + check_token(hashtag_mid.group(3))
+	### apostrophes
+	if len(re.findall("'", token)) != 0:
+		if token in contractions_and_prefixes or token.lower() in contractions_and_prefixes or token.lower() in cy_lexicon:
+			return [token]
+		if token[0] == "'" and token[-1] == "'" and len(token) > 2:
+			return ["'"] + check_token(token[1:-1]) + ["'"]
+		elif token[0] == "'":
+			### 'em-all => 'em - all
+			if not token[1:].isalpha():
+				result = []
+				split = check_token(token[1:])
+				if len(split) > 1:
+					split[0] = "'" + split[0]
+					for sp in split:
+						result = result + check_token(sp)	
+					return result	
+			return ["'"] + check_token(token[1:])
+		elif token[-1] == "'":
+			###os-f' => os - f'
+			if not token[:-1].isalpha():
+				result = []
+				split = check_token(token[:-1])
+				if len(split) > 1:
+					split[-1] = split[-1] + "'"
+					for sp in split:
+						result = result + check_token(sp)	
+					return result	
+			return ["'"] + check_token(token[:-1])
+		else:
+			apos = "'"
+			split = list(filter(None, re.split(r"(')", token)))
+			result = []
+			for i, s in enumerate(split):
+				before = apos + s
+				after = s + apos
+				if s not in ["'", ""]:
+					if i == 1 and len(split) == 3 and split[i-1] == "'" and split[i+1] == "'":
+							result = result + [apos] + check_token(s) + [apos]
+					if i == 0:
+						if split[i+1] == "'":
+							if after in contractions_and_prefixes:
+								result.append(after)
+								split[i+1] = ""
+							else:
+								result = result + check_token(s)
+						else:
+							result = result + check_token(s)
+					if i != 0 and i != len(split)-1:
+						if split[i-1] == "'" and (before in contractions_and_prefixes):
+							result.append(before)
+						elif split[i-1] == "'":
+							if split[i+1] == "'" and (after in contractions_and_prefixes):
+								result.append(after)
+								split[i+1] == ""
+							else:
+								result = result + [apos] + check_token(s)
+						else:
+							result = result + check_token(s)
+					elif i == len(split)-1:
+						if split[i-1] == "'" and (before in contractions_and_prefixes):
+							result.append(before)
+						elif split[i-1] == "'":
+							result = result + ["'"] + check_token(s)
+						else:
+							result = result + check_token(s)
+			return result
+	### hyphens
+	if len(re.findall("-", token)) != 0:
+		if token in contractions_and_prefixes or token.lower() in contractions_and_prefixes or token.lower() in cy_lexicon:
+			return [token]
+		if token[0] == "-":
+			if not token[1:].isalpha():
+				result = []
+				split = check_token(token[1:])
+				if len(split) > 1:
+					split[0] = "-" + split[0]
+					for sp in split:
+						result = result + check_token(sp)	
+					return result	
+			return ["-"] + check_token(token[1:])
+		elif token[-1] == "-":
+			### -pa-un6 => - pa - un 6
+			if not token[:-1].isalpha():
+				result = []
+				split = check_token(token[:-1])
+				if len(split) > 1:
+					split[-1] = split[-1] + "-"
+					for sp in split:
+						result = result + check_token(sp)	
+					return result	
+			return ["-"] + check_token(token[1:])
+		else:
+			hyph = "-"
+			split = list(filter(None, re.split(r"(-)", token)))
+			result = []
+			for i, s in enumerate(split):
+				before = hyph + s
+				after = s + hyph
+				if s not in ["-", ""]:
+					if i == 1 and len(split) == 3 and split[i-1] == "-" and split[i+1] == "-":
+							return [hyph] + check_token(s) + [hyph]
+					if i == 0:
+						if split[i+1] == "-":
+							if after in contractions_and_prefixes:
+								result.append(after)
+								split[i+1] = ""
+							else:
+								result = result + check_token(s)
+						else:
+							result = result + check_token(s)
+					if i != 0 and i != len(split)-1:
+						if split[i-1] == "-" and (before in contractions_and_prefixes):
+							result.append(before)
+						elif split[i-1] == "-":
+							if split[i+1] == "-" and (after in contractions_and_prefixes):
+								result.append(after)
+								split[i+1] == ""
+							else:
+								result = result + [hyph] + check_token(s)
+						else:
+							result = result + check_token(s)
+					elif i == len(split)-1:
+						if split[i-1] == "-" and (before in contractions_and_prefixes):
+							result.append(before)
+						elif split[i-1] == "-":
+							result = result + ["-"] + check_token(s)
+						else:
+							result = result + check_token(s)
+			return result
+	### word!word => word ! word
+	match_semic = re.match(r"^([\w]+);([\w]+)$", token)
+	if match_semic is not None:
+		apos_replace1 = (match_semic.group(1))
+		apos_replace2 = "'" + (match_semic.group(2))
+		if apos_replace2.lower() in cy_lexicon:
+			split2 = ";" + apos_replace2[1:]
+			return [(match_semic.group(1)), split2]
+		else:
+			return [(match_semic.group(1)), ";", (match_semic.group(2))]
+	### word!word => word ! word
+	match_mid = re.match(r"^([\w]+)([^\w\*]+)([\w]+)$", token)
+	if match_mid is not None:
+		return check_token(match_mid.group(1)) + check_token(match_mid.group(2)) + check_token(match_mid.group(3))
+	### !!!!?:!! => ! !!!?:!! 
+	if token[0] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "—", "–", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
+		return [token[0]] + check_token(token[1:])
+	if token[-1] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "—", "–", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
+		return check_token(token[0:-1]) + [token[-1]]
+	### numerical strings
+	if token[0].isnumeric():
+		### 1990au 1990s 90s 90's 90au
+		if re.match(r"^['’]?([12]?\d)?[0-9][0-9][']?(au|s)?$", token):
+			return [token]
+		### 90c 75p 99K
+		if re.match(r"^[\$€£¥][0-9]+([,\.]?[0-9]+)?[p¢ckKmM]?$", token):
+			return [token]
+		### 6pm 7yh 9a.m.
+		if re.match(r"^([012]?[0-9][:\.]?)?[012345][0-9](yh|am|yb|pm|y\.h\.|a\.m\.|y\.b\.|p\.m\.|ybore|yrhwyr|yp)?$", token):
+			return [token]
+		### 654BC
+		if re.match(r"^[123]?\d(\d\d)?(oc|cc|bc|bce|ce|ad|a\.\d\.|b\.c\.|b\.c\.e\.|o\.c\.|c\.c\.|c\.e\.)", token.lower()):
+			return [token]
+		### 09\07\2007
+		if re.match(r"^[0123]?\d[\\\-\.\/–][0123]?\d[\\\-\.\/–][12]\d\d\d", token) or re.match(r"^[12]\d\d\d[\\\-\.\/–][0123]?\d[\\\-\.\/–][0123]?\d", token):
+			return [token]
+		if re.match(r"^-?[0-9]+[,\.]\d+%?$", token) or re.match(r"^-?\d+\:?[0-9]+[,\.]\d+%?$", token):
+			return [token]
+	### 100people => 100 people
+	match_num1 = re.match(r"^([0-9\.,]+)([^0-9\.,]+)$", token)
+	if match_num1 is not None:
+		return check_token(match_num1.group(1)) + check_token(match_num1.group(2))
+	match_num2 = re.match(r"^([^0-9\.,]+)([0-9\.,]+)$", token)
+	if match_num2 is not None:
+		return check_token(match_num2.group(1)) + check_token(match_num2.group(2))
+	match_num3 = re.match(r"^([0-9\.,]+)(.+)$", token)
+	if match_num3 is not None:
+		return check_token(match_num3.group(1)) + check_token(match_num3.group(2))		
+	### 90c 75p 99K
+	if token[0] in ["$", "€", "£", "¥"] and re.match(r"[0-9\.,]+[¢cpMmkK]?$", token[1:]):
+		return [token]
+	return [token]
 
 def tokenise(sentence, total_sentences=None, total_tokens=None):
 	""" Split an input sentence into tokens, and return them as tab-separated values """
 	split_tokens = ""
 	if sentence[-1:] == "." and sentence[-2:] != " .":
 		sentence = "{}{}".format(sentence[:-1], " .")
+
 	tokens = token_split(sentence, total_tokens)
-	tokens = remove_markup(tokens)
+#	tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
 	return(split_tokens)
@@ -204,8 +343,10 @@ def tokeniser(input_data):
 
 if __name__ == "__main__":
 	""" Split the provided input into tokens (text as a string, or files) """
+	print("Tokeniser...\n")
 	args = sys.argv[1:]
 	if len(args) == 1 and os.path.isfile(args[0]) != True:
 		tokeniser(args[0])
 	else:
 		tokeniser(args)
+
