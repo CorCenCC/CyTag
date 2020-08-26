@@ -1,23 +1,11 @@
 {
-  "f'": [
-    "contraction",
+  "f'": {
+    "contraction":
     [
       "fy"
     ]
-  ],
-  "af-": [
-    "prefix",
-    []
-  ],
-  "traws-": [
-    "prefix",
-    []
-  ],
-  "all-": [
-    "prefix",
-    []
-  ],
-  "’swn": [
+  },
+  "'swn": [
     "contraction",
     [
       "baswn",
@@ -25,23 +13,11 @@
       "taswn"
     ]
   ],
-  "’to": [
+  "'to": [
     "contraction",
     [
       "eto"
     ]
-  ],
-  "gor-": [
-    "prefix",
-    []
-  ],
-  "ôl-": [
-    "prefix",
-    []
-  ],
-  "neo-": [
-    "prefix",
-    []
   ],
   "'sdim": [
     "contraction",
@@ -49,11 +25,7 @@
       "does_dim"
     ]
   ],
-  "tan-": [
-    "prefix",
-    []
-  ],
-  "e’llai": [
+  "e'llai": [
     "contraction",
     [
       "efallai"
@@ -65,17 +37,13 @@
       "gwnaf"
     ]
   ],
-  "gwrth-": [
-    "prefix",
-    []
-  ],
-  "fa’ma": [
+  "fa'ma": [
     "contraction",
     [
       "fan_yma"
     ]
   ],
-  "’sen": [
+  "'sen": [
     "contraction",
     [
       "basen",
@@ -83,37 +51,13 @@
       "tasen"
     ]
   ],
-  "ym-": [
-    "prefix",
-    []
-  ],
-  "go-": [
-    "prefix",
-    []
-  ],
   "'i": [
     "contraction",
     [
       "ei"
     ]
   ],
-  "cyd-": [
-    "prefix",
-    []
-  ],
-  "e-": [
-    "prefix",
-    []
-  ],
-  "dis-": [
-    "prefix",
-    []
-  ],
-  "dad-": [
-    "prefix",
-    []
-  ],
-  "t’mod": [
+  "t'mod": [
     "contraction",
     [
       "ti'n_gwybod"
@@ -138,11 +82,257 @@
       "yr"
     ]
   ],
-  "’m’bo’": [
+  "'m'bo'": [
     "contraction",
     [
       "ddim_yn_gwybod"
     ]
+  ],
+  "'u": [
+    "contraction",
+    [
+      "eu"
+    ]
+  ],
+  "'na": [
+    "contraction",
+    [
+      "yna",
+      "hynna",
+      "honna",
+      "hwnna",
+      "dyna"
+    ]
+  ],
+  "'sai": [
+    "contraction",
+    [
+      "basai",
+      "fasai",
+      "tasai"
+    ]
+  ],
+  "'th": [
+    "contraction",
+    [
+      "dy"
+    ]
+  ],
+  "'s'na'm": [
+    "contraction",
+    [
+      "does_na_ddim"
+
+    ]
+  ],
+  "'di": [
+    "contraction",
+    [
+      "wedi"
+    ]
+  ],
+  "'mlaen": [
+    "contraction",
+    [
+      "ymlaen"
+    ]
+  ],
+  "'Steddfod": [
+    "contraction",
+    [
+      "Eisteddfod"
+    ]
+  ],
+  "'Dolig": [
+    "contraction",
+    [
+      "Nadolig"
+    ]
+  ],
+  "'drycha": [
+    "contraction",
+    [
+      "edrycha"
+    ]
+  ],
+  "'panaid": [
+    "contraction",
+    [
+      "cwpanaid"
+    ]
+  ],
+  "'sgidiau": [
+    "contraction",
+    [
+      "esgidiau"
+    ]
+  ],
+  "'set": [
+    "contraction",
+    [
+      "baset",
+      "faset",
+      "taset"
+    ]
+  ],
+  "'ny": [
+    "contraction",
+    [
+      "hynny"
+    ]
+  ],
+  "'ch": [
+    "contraction",
+    [
+      "eich"
+    ]
+  ],
+  "'dy": [
+    "contraction",
+    [
+      "ydy"
+    ]
+  ],
+  "'w": [
+    "contraction",
+    [
+      "ei",
+      "eu"
+    ]
+  ],
+  "'fallai": [
+    "contraction",
+    [
+      "efallai"
+    ]
+  ],
+  "'fyd": [
+    "contraction",
+    [
+      "hefyd"
+    ]
+  ],
+  "'n": [
+    "contraction",
+    [
+      "yn",
+      "ein",
+      "fy"
+    ]
+  ],
+  "'sech": [
+    "contraction",
+    [
+      "basech",
+      "fasech",
+      "tasech"
+    ]
+  ],
+  "'ma": [
+    "contraction",
+    [
+      "yma",
+      "dyma"
+    ]
+  ],
+  "gynta'": [
+    "contraction",
+    [
+      "gyntaf"
+    ]
+  ],
+  "p'": [
+    "contraction",
+    [
+      "pa"
+    ]
+  ],
+  "'yn": [
+    "contraction",
+    [
+      "fy"
+    ]
+  ],
+  "o'dd": [
+    "contraction",
+    [
+      "oedd"
+    ]
+  ],
+  "'m": [
+    "contraction",
+    [
+      "fy",
+      "dim"
+    ]
+  ],
+  "fan'na": [
+    "contraction",
+    [
+      "fan_yna"
+    ]
+  ],
+  "sai'n": [
+    "contraction",
+    [
+      "sa_i'n"
+    ]
+  ],
+    "af-": [
+    "prefix",
+    []
+  ],
+  "traws-": [
+    "prefix",
+    []
+  ],
+  "all-": [
+    "prefix",
+    []
+  ],
+  "gor-": [
+    "prefix",
+    []
+  ],
+  "ôl-": [
+    "prefix",
+    []
+  ],
+  "neo-": [
+    "prefix",
+    []
+  ],
+  "tan-": [
+    "prefix",
+    []
+  ],
+  "gwrth-": [
+    "prefix",
+    []
+  ],
+  "ym-": [
+    "prefix",
+    []
+  ],
+  "go-": [
+    "prefix",
+    []
+  ],
+  "cyd-": [
+    "prefix",
+    []
+  ],
+  "e-": [
+    "prefix",
+    []
+  ],
+  "dis-": [
+    "prefix",
+    []
+  ],
+  "dad-": [
+    "prefix",
+    []
   ],
   "cyn-": [
     "prefix",
@@ -164,12 +354,6 @@
     "prefix",
     []
   ],
-  "'u": [
-    "contraction",
-    [
-      "eu"
-    ]
-  ],
   "en-": [
     "prefix",
     []
@@ -178,55 +362,13 @@
     "prefix",
     []
   ],
-  "'na": [
-    "contraction",
-    [
-      "yna",
-      "hynna",
-      "honna",
-      "hwnna",
-      "dyna"
-    ]
-  ],
-  "’sai": [
-    "contraction",
-    [
-      "basai",
-      "fasai",
-      "tasai"
-    ]
-  ],
   "dy-": [
     "prefix",
     []
   ],
-  "'th": [
-    "contraction",
-    [
-      "dy"
-    ]
-  ],
-  "’s’na’m": [
-    "contraction",
-    [
-      "does_na_ddim"
-    ]
-  ],
-  "'di": [
-    "contraction",
-    [
-      "wedi"
-    ]
-  ],
   "dar-": [
     "prefix",
     []
-  ],
-  "’mlaen": [
-    "contraction",
-    [
-      "ymlaen"
-    ]
   ],
   "poly-": [
     "prefix",
@@ -235,18 +377,6 @@
   "llys-": [
     "prefix",
     []
-  ],
-  "’Steddfod": [
-    "contraction",
-    [
-      "Eisteddfod"
-    ]
-  ],
-  "’Dolig": [
-    "contraction",
-    [
-      "Nadolig"
-    ]
   ],
   "ad-": [
     "prefix",
@@ -268,12 +398,6 @@
     "prefix",
     []
   ],
-  "’drycha": [
-    "contraction",
-    [
-      "edrycha"
-    ]
-  ],
   "tros-": [
     "prefix",
     []
@@ -294,32 +418,6 @@
     "prefix",
     []
   ],
-  "'panaid": [
-    "contraction",
-    [
-      "cwpanaid"
-    ]
-  ],
-  "’sgidiau": [
-    "contraction",
-    [
-      "esgidiau"
-    ]
-  ],
-  "’set": [
-    "contraction",
-    [
-      "baset",
-      "faset",
-      "taset"
-    ]
-  ],
-  "'ny": [
-    "contraction",
-    [
-      "hynny"
-    ]
-  ],
   "traf-": [
     "prefix",
     []
@@ -327,12 +425,6 @@
   "cyf-": [
     "prefix",
     []
-  ],
-  "'ch": [
-    "contraction",
-    [
-      "eich"
-    ]
   ],
   "lled-": [
     "prefix",
@@ -345,12 +437,6 @@
   "am-": [
     "prefix",
     []
-  ],
-  "'dy": [
-    "contraction",
-    [
-      "ydy"
-    ]
   ],
   "rhag-": [
     "prefix",
@@ -368,44 +454,9 @@
     "prefix",
     []
   ],
-  "'w": [
-    "contraction",
-    [
-      "ei",
-      "eu"
-    ]
-  ],
   "cyfr-": [
     "prefix",
     []
-  ],
-  "’fallai": [
-    "contraction",
-    [
-      "efallai"
-    ]
-  ],
-  "'fyd": [
-    "contraction",
-    [
-      "hefyd"
-    ]
-  ],
-  "'n": [
-    "contraction",
-    [
-      "yn",
-      "ein",
-      "fy"
-    ]
-  ],
-  "’sech": [
-    "contraction",
-    [
-      "basech",
-      "fasech",
-      "tasech"
-    ]
   ],
   "rhy-": [
     "prefix",
@@ -415,44 +466,12 @@
     "prefix",
     []
   ],
-  "'ma": [
-    "contraction",
-    [
-      "yma",
-      "dyma"
-    ]
-  ],
-  "gynta'": [
-    "contraction",
-    [
-      "gyntaf"
-    ]
-  ],
   "dir-": [
     "prefix",
     []
   ],
-  "p'": [
-    "contraction",
-    [
-      "pa"
-    ]
-  ],
-  "'yn": [
-    "contraction",
-    [
-      "fy"
-    ]
-  ],
   "hunan-": [
     "prefix",
     []
-  ],
-  "'m": [
-    "contraction",
-    [
-      "fy",
-      "dim"
-    ]
   ]
 }
