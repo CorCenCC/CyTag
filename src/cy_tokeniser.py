@@ -52,8 +52,43 @@ def remove_markup(tokens):
 		if token[:7] == "<rhegi>":
 			tokens[i] = tokens[i][7:]
 		if token[-8:] == "</rhegi>":
-			tokens[i] = tokens[i][:-7]		
+			tokens[i] = tokens[i][:-8]		
 	return(tokens)
+
+def en_tag_check(sentence):
+	""" Ensure that content in <en> tags is kept together """
+	if sentence.find("<en>") != -1:
+		split_tags = re.split(r"(</?en>)", sentence)
+		en_split = list(filter(None, split_tags))
+		if len(en_split) < 3:
+			sentence = (re.sub(r"</?en>", "", sentence))	
+		else:
+			tag_open = en_split.index("<en>")
+			tag_close = en_split.index("</en>")
+			if tag_close == tag_open + 2:
+				tag_contents = en_split[tag_open+1]
+				tag_items = tag_contents.split(" ")
+				tag_items = list(filter(None, tag_items))
+				all_tagged = []
+				for item in tag_items:
+					individually_tagged = "<en>" + item + "</en>"
+					all_tagged.append(individually_tagged)
+				en_split_modified = en_split[:tag_close+1]
+				en_split_modified[tag_open] = ""
+				en_split_modified[tag_close] = ""
+				en_split_modified[tag_open+1] = " ".join(all_tagged)
+				en_split_modified = list(filter(None, en_split_modified))
+				sentence = " ".join(en_split_modified)
+				if tag_close != len(en_split)+1:
+					if "<en>" in en_split[tag_close+1:]:
+						post_tags = en_tag_check("".join(en_split[tag_close+1:]))
+					else:
+						post_tags = "".join(en_split[tag_close+1:])
+					sentence += post_tags
+			else:
+				sentence = (re.sub(r"</?en>", "", sentence))			
+	return sentence
+
 
 def token_split(sent, total_tokens):
 	""" Use regular expressions to split a sentence into a list of tokens, before handling more complex cases """
@@ -62,6 +97,7 @@ def token_split(sent, total_tokens):
 		""" Normalize different kinds of potential apostrophe/single quotation and dash/hyphen characters """
 		sent_apos = (re.sub(r"[’‘`]", "'", sent))
 		sentence = (re.sub(r"[‑—–]", "-", sent_apos))
+		sentence = en_tag_check(sentence)
 		regexed_tokens = re.split(r"\s(?!\S[.])|(?<!\S[.])\s", sentence)
 		token_list = list(filter(None, regexed_tokens))
 		token_list = remove_markup(token_list)
@@ -342,9 +378,8 @@ def tokenise(sentence, total_sentences=None, total_tokens=None):
 	split_tokens = ""
 	if sentence[-1:] == "." and sentence[-2:] != " .":
 		sentence = "{}{}".format(sentence[:-1], " .")
-
 	tokens = token_split(sentence, total_tokens)
-#	tokens = remove_markup(tokens)
+	tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
 	return(split_tokens)
