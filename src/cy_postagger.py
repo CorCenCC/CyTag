@@ -146,7 +146,6 @@ def lookup_readings(token):
 
 def lookup_multiple_readings(tokens):
 	""" Lookup readings for multiple tokens in the lexicon at the same time, and return them """
-	print("10 ", tokens)
 	readings = []
 	for token in tokens:
 		if token in cy_lexicon:
@@ -160,7 +159,6 @@ def lookup_multiple_readings(tokens):
 					mutation_readings = [[mutation[0], 
 					[x["pos_enriched"]], x["lemma"], [x["lemma_en"]], mutation[1]] for x in cy_lexicon[mutation[0]]]
 					readings = readings + mutation_readings
-	print("09 ", readings)
 	return readings
 
 def format_en_lemmas(lemmas):
@@ -188,7 +186,6 @@ def format_multireading_lookup(readings, token, token_position):
 	return reading_string
 
 def handle_empty_lookup(token):
-	print("03 ", token)
 	""" Produce readings for tokens that didn't return anything during a regular lookup, focusing on:
 		---	Tokens that are capitalised (that we assume to be proper nouns)
 		--- Tokens that we know to be common contractions
@@ -252,7 +249,6 @@ def handle_empty_lookup(token):
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if token[0][-1:] in ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] in ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
 			readings = lookup_multiple_readings(["{}r".format(token[0]), "{}l".format(token[0])])
-			print("11 ", readings)
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
@@ -267,7 +263,6 @@ def handle_empty_lookup(token):
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
-		print("07 ", count_readings)
 		print(reading_string)
 		if not count_readings == True:
 			print("08 NOT TRUE")
@@ -281,7 +276,6 @@ def handle_empty_lookup(token):
 			else:
 				reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
 				stats["pre-cg"]["without_readings"] += 1
-	print("04 ", reading_string)
 	return(reading_string, count_readings)
 
 def get_reading(token_id, token):
@@ -310,15 +304,11 @@ def get_reading(token_id, token):
 		stats["pre-cg"]["definite_tag"] += 1
 	else:
 		readings_string += "\"<{}>\"\n".format(token[0])
-		print("01 ", readings_string)
 		readings = lookup_readings(token[0])
-		print("05 ", readings)
 		if len(readings) == 0:
 			empty_lookup, count_readings = handle_empty_lookup(token)
-			print("06 ", empty_lookup)
 			if empty_lookup != "":
 				readings_string += empty_lookup
-				print("02 ", readings_string)
 				if count_readings == True:
 					readings.append(["empty" for x in empty_lookup.splitlines() if x != ""])
 		else:
@@ -594,7 +584,6 @@ def run_cg(cg_readings, vislcg3_location):
 def sentence_readings(tokenised_sentence, total_tokens):
 	""" Return a set of CG-formatted readings for a tokenised sentence """
 	tokens = tokenised_sentence.splitlines()
-	print("24 ", tokens)
 	sentence_lengths.append(len(tokens))
 	readings = ""
 	for i, token in enumerate([token.split("\t") for token in tokens]):
