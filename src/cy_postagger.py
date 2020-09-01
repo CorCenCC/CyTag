@@ -223,22 +223,44 @@ def handle_empty_lookup(token):
 		reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if len(readings) > 0:
 			count_readings = True
-	elif token[0][-1:] in ["a", "â", "e", "ê", "i", "î", "o", "ô", "u", "û", "w", "ŵ", "y", "ŷ"]:
+	if token[0][-1:] in ["a", "e"]:
+		""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
+		readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
+		reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if len(readings) > 0:
+			count_readings = True
+	if token[0][-1:] in ["a", "e"]:
+		""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
+		readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
+		reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if len(readings) > 0:
+			count_readings = True
+	if token[0][-1:] in ["a", "â", "e", "ê", "i", "î", "o", "ô", "u", "û", "w", "ŵ", "y", "ŷ"]:
 		readings = lookup_multiple_readings(["{}f".format(token[0])])
 		reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if len(readings) > 0:
 			count_readings = True
-	elif token[0][-1:] in ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] in ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
+	if token[0][-1:] in ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] in ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
 		readings = lookup_multiple_readings(["{}r".format(token[0]), "{}l".format(token[0])])
 		reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if len(readings) > 0:
 			count_readings = True
-	elif token[0][0].isupper():
+	if token[0][-2:] in ["es"]:
+		readings = lookup_multiple_readings(["{}ais".format(token[0][:-2])])
+		reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if len(readings) > 0:
+			count_readings = True
+	if token[0][-3:] in ["est"]:
+		readings = lookup_multiple_readings(["{}aist".format(token[0][:-3])])
+		reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if len(readings) > 0:
+			count_readings = True
+	if token[0][0].isupper():
 		reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p g", token[0])
 		reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p b", token[0])
 		stats["pre-cg"]["with_readings"] += 1
 		stats["pre-cg"]["assumed_proper"] += 1
-	else:
+	if not count_readings == True:
 		reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
 		stats["pre-cg"]["without_readings"] += 1
 	return(reading_string, count_readings)
