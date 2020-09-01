@@ -252,7 +252,6 @@ def handle_empty_lookup(token):
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
-
 		if token[0][-2:] in ["es"]:
 			readings = lookup_multiple_readings(["{}ais".format(token[0][:-2])])
 			if len(readings) > 0:
@@ -263,9 +262,17 @@ def handle_empty_lookup(token):
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
-		print(reading_string)
+		if token[0].find('e', 1, len(token[0])-1) != -1:
+			if token[0].index("e") not in [0, len(token[0])-1]:
+				split_e = token[0][1:len(token[0])-1].split("e")
+				join_au = token[0][0] + "au".join(split_e) + token[0][-1]
+				join_ae = token[0][0] + "ae".join(split_e) + token[0][-1]
+				join_ai = token[0][0] + "ai".join(split_e) + token[0][-1]
+				readings = lookup_multiple_readings([join_ae, join_ai, join_au])
+				if len(readings) > 0:
+					count_readings = True
+					reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if not count_readings == True:
-			print("08 NOT TRUE")
 			if token[0].lower() in en_ten_thou:
 				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
 			elif token[0][0].isupper():
