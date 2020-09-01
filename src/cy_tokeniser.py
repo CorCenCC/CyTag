@@ -52,8 +52,14 @@ def remove_markup(tokens):
 		if token[:7] == "<rhegi>":
 			tokens[i] = tokens[i][7:]
 		if token[-8:] == "</rhegi>":
-			tokens[i] = tokens[i][:-8]		
-	return(tokens)
+			tokens[i] = tokens[i][:-8]
+	for i,tok in enumerate(tokens):
+		tokens[i] = (re.sub(r"<ym>", "ymm", tok))
+	final_tokens = []
+	for token in tokens:
+		tok_split = re.split(r"(<[sS](?:\d+|\?)>)", token)
+		final_tokens += list(filter(None, tok_split))
+	return(final_tokens)
 
 def en_tag_check(sentence):
 	""" Ensure that content in <en> tags is kept together """
@@ -112,16 +118,20 @@ def check_token(token):
 	### can tag them correctly.
 	match_english = re.match(r"^(<en( gair=\"[a-zA-Z]+\")?>([\w'\-]+)</en>)(.*)$", token)
 	if match_english is not None:
+		no_gair = (re.sub(r"<en gair=\"[a-zA-Z]+\" ?>", "<en>", match_english.group(1)))
 		if match_english.group(4) != "":
-			return [match_english.group(1)] + check_token(match_english.group(4))
+			return [no_gair] + check_token(match_english.group(4))
 		else:
-			return [match_english.group(1)]
+			return [no_gair]
 	match_anon = re.match(r"^(<anon>[\w'\-]+</anon>)(.*)$", token)
 	if match_anon is not None:
 		if match_anon.group(2) != "":
 			return [match_anon.group(1)] + check_token(match_anon.group(2))
 		else:
 			return [match_anon.group(1)]
+	match_speaker_tag = re.match(r"^<[sS](\d+|\?)>$", token)
+	if match_speaker_tag is not None:
+		return [token]
 	if len(re.findall(r"[\\/]", token)) > 0:
 		if len(set(token)) == 1:
 			return [token]
@@ -133,6 +143,7 @@ def check_token(token):
 			else:
 				result += check_token(s)
 		return result
+
 	### !!!! aaaaa Ffffff 
 	if len(set(token.lower())) == 1:
 		return [token]

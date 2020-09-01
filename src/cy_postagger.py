@@ -53,6 +53,9 @@ from shared.load_gazetteers import *
 from shared.load_lexicon import *
 from shared.reference_lists import *
 
+with open("cy_gazetteers/corcencc.en_words") as GeirEN:
+	en_ten_thou = set(GeirEN.read().splitlines())
+
 stats = {"pre-cg": 
 			{"untagged": 0, "definite_tag": 0, "with_readings": 0, "single_reading": 0, "multiple_readings": 0, "without_readings": 0, "no_readings": 0, "assumed_proper": 0},
 		 "post-cg":
@@ -96,7 +99,10 @@ def find_definite_tags(token):
 		--- acronynms or abbreviations (from gazetteers)
 	"""
 	pos = ""
-	if token.startswith("<anon>"):
+	match_speaker_tag = re.match(r"^<[sS](\d+|\?)>$", token)
+	if match_speaker_tag is not None:
+		pos = "Anon:Anon"
+	elif token.startswith("<anon>"):
 		pos = "Anon:Anon"
 	elif token[:3] == "<en":
 		pos = "Gw:Gwest"
@@ -140,6 +146,7 @@ def lookup_readings(token):
 
 def lookup_multiple_readings(tokens):
 	""" Lookup readings for multiple tokens in the lexicon at the same time, and return them """
+	print("10 ", tokens)
 	readings = []
 	for token in tokens:
 		if token in cy_lexicon:
@@ -153,6 +160,7 @@ def lookup_multiple_readings(tokens):
 					mutation_readings = [[mutation[0], 
 					[x["pos_enriched"]], x["lemma"], [x["lemma_en"]], mutation[1]] for x in cy_lexicon[mutation[0]]]
 					readings = readings + mutation_readings
+	print("09 ", readings)
 	return readings
 
 def format_en_lemmas(lemmas):
@@ -180,6 +188,7 @@ def format_multireading_lookup(readings, token, token_position):
 	return reading_string
 
 def handle_empty_lookup(token):
+	print("03 ", token)
 	""" Produce readings for tokens that didn't return anything during a regular lookup, focusing on:
 		---	Tokens that are capitalised (that we assume to be proper nouns)
 		--- Tokens that we know to be common contractions
@@ -191,78 +200,88 @@ def handle_empty_lookup(token):
 	count_readings = False
 	reading_string = "" 
 	token_parts = token[0].lower().split("-")
-	if token[0] in contractions_and_prefixes.keys():
-		if contractions_and_prefixes[token[0]][0] == "contraction":
-			readings = lookup_multiple_readings(contractions_and_prefixes[token[0]][1])	
-			reading_string += format_multireading_lookup(readings, token[0], token[1])
+	if token[0].lower() in contractions_and_prefixes.keys():
+		if contractions_and_prefixes[token[0].lower()][0] == "contraction":
+			readings = lookup_multiple_readings(contractions_and_prefixes[token[0].lower()][1])	
 			if len(readings) > 0:
 				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
 	elif token[0].lower() in contractions_and_prefixes.keys():
 		if contractions_and_prefixes[token[0].lower()][0] == "contraction":
 			readings = lookup_multiple_readings(contractions_and_prefixes[token[0].lower()][1])
-			reading_string += format_multireading_lookup(readings, token[0], token[1])
 			if len(readings) > 0:
 				count_readings = True
-	elif token[0].find("-") != -1:
-		no_spaces = "".join(token_parts)
-		spaces = " ".join(token_parts)
-		readings = lookup_multiple_readings([no_spaces, spaces])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True		
-		elif len(token_parts) == 2 and (token_parts[0] + "-") in contractions_and_prefixes:
-			readings = lookup_multiple_readings([token_parts[1]])
-			for reading in readings:
-				morphology = tag_morphology(reading[1][0])
-				tags = " ".join(tag_morphology(reading[1][0]))
-				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0].lower(), token[1], tags, "-")
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+	else:
+		if token[0].find("-") != -1:
+			no_spaces = "".join(token_parts)
+			spaces = " ".join(token_parts)
+			readings = lookup_multiple_readings([no_spaces, spaces])
 			if len(readings) > 0:
 				count_readings = True
-	elif token[0][-1:] == "'":
-		readings = lookup_multiple_readings(["{}f".format(token[0][:-1]), "{}r".format(token[0][:-1]), "{}l".format(token[0][:-1])])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True
-	if token[0][-1:] in ["a", "e"]:
-		""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
-		readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True
-	if token[0][-1:] in ["a", "e"]:
-		""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
-		readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True
-	if token[0][-1:] in ["a", "â", "e", "ê", "i", "î", "o", "ô", "u", "û", "w", "ŵ", "y", "ŷ"]:
-		readings = lookup_multiple_readings(["{}f".format(token[0])])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True
-	if token[0][-1:] in ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] in ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
-		readings = lookup_multiple_readings(["{}r".format(token[0]), "{}l".format(token[0])])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True
-	if token[0][-2:] in ["es"]:
-		readings = lookup_multiple_readings(["{}ais".format(token[0][:-2])])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True
-	if token[0][-3:] in ["est"]:
-		readings = lookup_multiple_readings(["{}aist".format(token[0][:-3])])
-		reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if len(readings) > 0:
-			count_readings = True
-	if token[0][0].isupper():
-		reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p g", token[0])
-		reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p b", token[0])
-		stats["pre-cg"]["with_readings"] += 1
-		stats["pre-cg"]["assumed_proper"] += 1
-	if not count_readings == True:
-		reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
-		stats["pre-cg"]["without_readings"] += 1
+				reading_string += format_multireading_lookup(readings, token[0], token[1])		
+			elif len(token_parts) == 2 and (token_parts[0] + "-") in contractions_and_prefixes:
+				readings = lookup_multiple_readings([token_parts[1]])
+				for reading in readings:
+					morphology = tag_morphology(reading[1][0])
+					tags = " ".join(tag_morphology(reading[1][0]))
+					reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0].lower(), token[1], tags, "-")
+				if len(readings) > 0:
+					count_readings = True
+		if token[0][-1:] == "'":
+			readings = lookup_multiple_readings(["{}f".format(token[0][:-1]), "{}r".format(token[0][:-1]), "{}l".format(token[0][:-1])])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if token[0][-1:] in ["a", "e"]:
+			""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
+			readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if token[0][-1:] in ["a", "e"]:
+			""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
+			readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if token[0][-1:] in ["a", "â", "e", "ê", "i", "î", "o", "ô", "u", "û", "w", "ŵ", "y", "ŷ"]:
+			readings = lookup_multiple_readings(["{}f".format(token[0])])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if token[0][-1:] in ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] in ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
+			readings = lookup_multiple_readings(["{}r".format(token[0]), "{}l".format(token[0])])
+			print("11 ", readings)
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+
+		if token[0][-2:] in ["es"]:
+			readings = lookup_multiple_readings(["{}ais".format(token[0][:-2])])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if token[0][-3:] in ["est"]:
+			readings = lookup_multiple_readings(["{}aist".format(token[0][:-3])])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+		print("07 ", count_readings)
+		print(reading_string)
+		if not count_readings == True:
+			print("08 NOT TRUE")
+			if token[0].lower() in en_ten_thou:
+				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
+			elif token[0][0].isupper():
+				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p g", token[0])
+				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p b", token[0])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["assumed_proper"] += 1
+			else:
+				reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
+				stats["pre-cg"]["without_readings"] += 1
+	print("04 ", reading_string)
 	return(reading_string, count_readings)
 
 def get_reading(token_id, token):
@@ -273,9 +292,12 @@ def get_reading(token_id, token):
 	""" token[0] = token; token[1] = sentence number, token count (e.g. 3,12) """
 	if pos == "Anon:Anon":
 		readings.append("definite")
-		readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][6:-7], token[0][6:-7], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][6:-7])
 		stats["pre-cg"]["with_readings"] += 1
 		stats["pre-cg"]["definite_tag"] += 1
+		if token[0][0:6] == "<anon>":
+			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][6:-7], token[0][6:-7], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][6:-7])
+		else:
+			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
 	elif pos == "Gw:Gwest":
 		readings.append("definite")
 		readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][4:-5], token[0][4:-5], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][4:-5])
@@ -288,11 +310,15 @@ def get_reading(token_id, token):
 		stats["pre-cg"]["definite_tag"] += 1
 	else:
 		readings_string += "\"<{}>\"\n".format(token[0])
+		print("01 ", readings_string)
 		readings = lookup_readings(token[0])
+		print("05 ", readings)
 		if len(readings) == 0:
 			empty_lookup, count_readings = handle_empty_lookup(token)
+			print("06 ", empty_lookup)
 			if empty_lookup != "":
 				readings_string += empty_lookup
+				print("02 ", readings_string)
 				if count_readings == True:
 					readings.append(["empty" for x in empty_lookup.splitlines() if x != ""])
 		else:
@@ -562,6 +588,7 @@ def run_cg(cg_readings, vislcg3_location):
 def sentence_readings(tokenised_sentence, total_tokens):
 	""" Return a set of CG-formatted readings for a tokenised sentence """
 	tokens = tokenised_sentence.splitlines()
+	print("24 ", tokens)
 	sentence_lengths.append(len(tokens))
 	readings = ""
 	for i, token in enumerate([token.split("\t") for token in tokens]):
