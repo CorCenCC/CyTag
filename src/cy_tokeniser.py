@@ -63,36 +63,47 @@ def remove_markup(tokens):
 
 def en_tag_check(sentence):
 	""" Ensure that content in <en> tags is kept together """
-	if sentence.find("<en>") != -1:
-		split_tags = re.split(r"(</?en>)", sentence)
+	print("Checking sentence: ", sentence)
+	if sentence.find("<en") != -1:
+		sentence = re.sub(r'<en gair="[^"]+">', '<en>', sentence)
+		split_tags = re.split(r'(</?en>)', sentence)
 		en_split = list(filter(None, split_tags))
 		if len(en_split) < 3:
-			sentence = (re.sub(r"</?en>", "", sentence))	
+			sentence = (re.sub(r"</?en>", "", sentence))
+		elif sentence.count("<en>") != sentence.count("</en>"):
+			sentence = (re.sub(r'(</?en>)', "", sentence))
 		else:
-			tag_open = en_split.index("<en>")
+			print("Balanced tags: ", en_split)
 			tag_close = en_split.index("</en>")
-			if tag_close == tag_open + 2:
-				tag_contents = en_split[tag_open+1]
-				tag_items = tag_contents.split(" ")
-				tag_items = list(filter(None, tag_items))
-				all_tagged = []
-				for item in tag_items:
+			tag_open = tag_close - 2
+			tag_contents = en_split[tag_open+1]
+			tag_items = tag_contents.split(" ")
+			tag_items = list(filter(None, tag_items))
+			all_tagged = []
+			for item in tag_items:
+				split_punct = re.split(r"(\W+)", item)
+				split_punct = list(filter(None, split_punct))
+				print("SP: ", split_punct)
+				if len(split_punct) == 1:
 					individually_tagged = "<en>" + item + "</en>"
+					print(individually_tagged)
 					all_tagged.append(individually_tagged)
-				en_split_modified = en_split[:tag_close+1]
-				en_split_modified[tag_open] = ""
-				en_split_modified[tag_close] = ""
-				en_split_modified[tag_open+1] = " ".join(all_tagged)
-				en_split_modified = list(filter(None, en_split_modified))
-				sentence = " ".join(en_split_modified)
-				if tag_close != len(en_split)+1:
-					if "<en>" in en_split[tag_close+1:]:
-						post_tags = en_tag_check("".join(en_split[tag_close+1:]))
-					else:
-						post_tags = "".join(en_split[tag_close+1:])
-					sentence += post_tags
-			else:
-				sentence = (re.sub(r"</?en>", "", sentence))			
+				else:
+					for x in split_punct:
+						if x.isalpha():
+							individually_tagged = "<en>" + x + "</en>"
+							all_tagged.append(individually_tagged)
+						else:
+							all_tagged.append(x)
+			sentence = " ".join(all_tagged)
+			print("Sentence joined: ", sentence)
+			if tag_close != len(en_split)-1:
+				if "<en>" in en_split[tag_close+1:]:
+					post_tags = en_tag_check("".join(en_split[tag_close+1:]))
+				else:
+					post_tags = "".join(en_split[tag_close+1:])
+				sentence += post_tags
+	print("After tag check: ", sentence)	
 	return sentence
 
 
@@ -132,6 +143,8 @@ def check_token(token):
 	match_speaker_tag = re.match(r"^<[sS](\d+|\?)>$", token)
 	if match_speaker_tag is not None:
 		return [token]
+	if token in ["<=>", "</=>", "<saib>", "<aneglur>"]:
+		return [token]
 	if len(re.findall(r"[\\/]", token)) > 0:
 		if len(set(token)) == 1:
 			return [token]
@@ -143,7 +156,6 @@ def check_token(token):
 			else:
 				result += check_token(s)
 		return result
-
 	### !!!! aaaaa Ffffff 
 	if len(set(token.lower())) == 1:
 		return [token]
@@ -173,7 +185,7 @@ def check_token(token):
 			return check_token(hashtag_mid.group(1)) + [hashtag_mid.group(2)] + check_token(hashtag_mid.group(3))
 	### apostrophes
 	if len(re.findall("'", token)) != 0:
-		if token in contractions_and_prefixes or token.lower() in contractions_and_prefixes or token.lower() in cy_lexicon:
+		if token.lower() in cy_lexicon:
 			return [token]
 		if token[0] == "'" and token[-1] == "'" and len(token) > 2:
 			return ["'"] + check_token(token[1:-1]) + ["'"]
@@ -203,135 +215,63 @@ def check_token(token):
 			apos = "'"
 			split = list(filter(None, re.split(r"(')", token)))
 			result = []
-			for i, s in enumerate(split):
-				before = apos + s
-				after = s + apos
-				if s not in ["'", ""]:
-					if i == 1 and len(split) == 3 and split[i-1] == "'" and split[i+1] == "'":
-							result = result + [apos] + check_token(s) + [apos]
-					if i == 0:
-						if split[i+1] == "'":
-							if after in contractions_and_prefixes:
-								result.append(after)
-								split[i+1] = ""
+			if len(split) == 3 and split[0].isalpha() and split[2].isalpha:
+				if split[1] + split[2] in cy_lexicon:
+					return [split[0], (split[1] + split[2])]
+				else:
+					return [token]
+			else:
+				for i, s in enumerate(split):
+					before = apos + s
+					after = s + apos
+					if s not in ["'", ""]:
+						if i == 1 and len(split) == 3 and split[i-1] == "'" and split[i+1] == "'":
+								result = result + [apos] + check_token(s) + [apos]
+						if i == 0:
+							if split[i+1] == "'":
+								if after in contractions_and_prefixes:
+									result.append(after)
+									split[i+1] = ""
+								else:
+									result = result + check_token(s)
 							else:
 								result = result + check_token(s)
-						else:
-							result = result + check_token(s)
-					if i != 0 and i != len(split)-1:
-						if split[i-1] == "'" and (before in contractions_and_prefixes):
-							result.append(before)
-						elif split[i-1] == "'":
-							if split[i+1] == "'" and (after in contractions_and_prefixes):
-								result.append(after)
-								split[i+1] == ""
+						if i != 0 and i != len(split)-1:
+							if split[i-1] == "'" and (before in contractions_and_prefixes):
+								result.append(before)
+							elif split[i-1] == "'":
+								if split[i+1] == "'" and (after in contractions_and_prefixes):
+									result.append(after)
+									split[i+1] == ""
+								else:
+									result = result + [apos] + check_token(s)
 							else:
-								result = result + [apos] + check_token(s)
-						else:
-							result = result + check_token(s)
-					elif i == len(split)-1:
-						if split[i-1] == "'" and (before in contractions_and_prefixes):
-							result.append(before)
-						elif split[i-1] == "'":
-							result = result + ["'"] + check_token(s)
-						else:
-							result = result + check_token(s)
+								result = result + check_token(s)
+						elif i == len(split)-1:
+							if split[i-1] == "'" and (before in contractions_and_prefixes):
+								result.append(before)
+							elif split[i-1] == "'":
+								result = result + ["'"] + check_token(s)
+							else:
+								result = result + check_token(s)
 			return result
 	### hyphens
-	if token.find("-") != -1:
-		result = []
-		if token.lower() in cy_lexicon or token.lower() in gazetteers:
+	if len(re.findall("-", token)) != 0:
+		if token.lower() in cy_lexicon:
 			return [token]
-		token_parts = re.split("(-)", token)
-		if len(token_parts) == 3:
-			result = check_token(token_parts[0]) + check_token(token_parts[1])
-			return result
-		for i, tok in enumerate(token_parts):
-			if not tok.isalpha() and tok != "-":
-				if i == 0:
-					first_part = token_parts[0]
-					last_part = "".join(token_parts[2:])
-					result = check_token(first_part) + ["-"] + check_token(last_part)
-				elif i == len(token_parts) - 1:
-					first_part = "".join(token_parts[:-2])
-					last_part = token_parts[i]
-					result = check_token(first_part) + ["-"] + check_token(last_part)
-				else:
-					first_part = "".join(token_parts[:i-2])
-					middle_part = token_parts[i]
-					last_part = "".join(token_parts[i+2:])
-					result = check_token(first_part) + ["-"] + check_token(middle_part) + ["-"] + check_token(last_part)
-				return result
-		token_parts_nohyphens = token.lower().split("-")
-		if "".join(token_parts_nohyphens) in cy_lexicon or "".join(token_parts_nohyphens) in gazetteers or " ".join(token_parts_nohyphens) in cy_lexicon or " ".join(token_parts_nohyphens) in gazetteers:
-			return [token]
-		elif token_parts_nohyphens[0] + "-" in contractions_and_prefixes:
-			first = "".join(token_parts[0:3])
-			rest = "".join(token_parts[3:])
-			result = [first]
-			if rest != "":
-				result += check_token(rest)
-			return result
 		elif token[0] == "-":
-			if not token[1:].isalpha():
-				result = []
-				split = check_token(token[1:])
-				if len(split) > 1:
-					split[0] = "-" + split[0]
-					for sp in split:
-						result = result + check_token(sp)	
-					return result	
 			return ["-"] + check_token(token[1:])
 		elif token[-1] == "-":
-			### -pa-un6 => - pa - un 6
-			if not token[:-1].isalpha():
-				result = []
-				split = check_token(token[:-1])
-				if len(split) > 1:
-					split[-1] = split[-1] + "-"
-					for sp in split:
-						result = result + check_token(sp)	
-					return result	
-			return ["-"] + check_token(token[1:])
+			return ["-"] + check_token(token[:-1])
+		elif token.count("-") == 1:
+			hyph_index = token.index("-")
+			if token[:hyph_index+1] in cy_lexicon:
+				return [token[:hyph_index+1]] + check_token(token[hyph_index+1:])
+			else:
+				return [token[:hyph_index], "-"] + check_token(token[hyph_index+1:])
 		else:
-			hyph = "-"
-			split = list(filter(None, re.split(r"(-)", token)))
-			result = []
-			for i, s in enumerate(split):
-				before = hyph + s
-				after = s + hyph
-				if s not in ["-", ""]:
-					if i == 1 and len(split) == 3 and split[i-1] == "-" and split[i+1] == "-":
-							return [hyph] + check_token(s) + [hyph]
-					if i == 0:
-						if split[i+1] == "-":
-							if after in contractions_and_prefixes:
-								result.append(after)
-								split[i+1] = ""
-							else:
-								result = result + check_token(s)
-						else:
-							result = result + check_token(s)
-					if i != 0 and i != len(split)-1:
-						if split[i-1] == "-" and (before in contractions_and_prefixes):
-							result.append(before)
-						elif split[i-1] == "-":
-							if split[i+1] == "-" and (after in contractions_and_prefixes):
-								result.append(after)
-								split[i+1] == ""
-							else:
-								result = result + [hyph] + check_token(s)
-						else:
-							result = result + check_token(s)
-					elif i == len(split)-1:
-						if split[i-1] == "-" and (before in contractions_and_prefixes):
-							result.append(before)
-						elif split[i-1] == "-":
-							result = result + ["-"] + check_token(s)
-						else:
-							result = result + check_token(s)
-			return result
-	### word!word => word ! word
+			return [token]
+	### word;word => word ; word
 	match_semic = re.match(r"^([\w]+);([\w]+)$", token)
 	if match_semic is not None:
 		apos_replace1 = (match_semic.group(1))
@@ -386,13 +326,18 @@ def check_token(token):
 
 def tokenise(sentence, total_sentences=None, total_tokens=None):
 	""" Split an input sentence into tokens, and return them as tab-separated values """
+	print("Sentence 329: ", sentence)
 	split_tokens = ""
 	if sentence[-1:] == "." and sentence[-2:] != " .":
 		sentence = "{}{}".format(sentence[:-1], " .")
 	tokens = token_split(sentence, total_tokens)
+	print("Tokens are now:", tokens)
 	tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
+	print("Sentence generated %s tokens." % len(tokens))
+	print("From: ", sentence)
+	print("To: ", split_tokens)
 	return(split_tokens)
 
 def tokeniser(input_data):
@@ -403,6 +348,7 @@ def tokeniser(input_data):
 		for file_id, file in enumerate(input_data):
 			with open(file, encoding="utf-8") as file_text:
 				for segment_id, segment in enumerate(segment_text(file_text.read())):
+					print("Segment: ", segment)
 					for sentence_id, sentence in enumerate(split_sentences(segment)):
 						total_sentences += 1
 						split_tokens = tokenise(sentence, total_sentences, total_tokens)

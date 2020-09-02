@@ -210,7 +210,7 @@ def handle_empty_lookup(token):
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
 	else:
-		if token[0].find("-") != -1:
+		if token[0].find("-") != -1 and len(set(token[0])) < 1:
 			no_spaces = "".join(token_parts)
 			spaces = " ".join(token_parts)
 			readings = lookup_multiple_readings([no_spaces, spaces])
@@ -272,6 +272,12 @@ def handle_empty_lookup(token):
 				if len(readings) > 0:
 					count_readings = True
 					reading_string += format_multireading_lookup(readings, token[0], token[1])
+		if token[0].find("'") != -1:
+			no_apos = "".join(token[0].split("'"))
+			readings = lookup_multiple_readings([no_apos])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if not count_readings == True:
 			if token[0].lower() in en_ten_thou:
 				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
