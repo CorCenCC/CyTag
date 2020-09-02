@@ -1,8 +1,5 @@
 #!usr/bin/env python3
 #-*- coding: utf-8 -*-
-import logging
-
-logger = logging.getLogger("cy.reflists")
 
 """ The appropriate rich POS tags that collapse into each basic POS tag """
 tag_categories = [["Anon", ["Anon"]],
@@ -26,7 +23,7 @@ tag_categories = [["Anon", ["Anon"]],
 							"Rhamedd1u", "Rhamedd2u", "Rhamedd3gu", "Rhamedd3bu", "Rhamedd1ll", "Rhamedd2ll", "Rhamedd3ll",
 							"Rhacys1u", "Rhacys2u", "Rhacys3gu", "Rhacys3bu", "Rhacys1ll", "Rhacys2ll", "Rhacys3ll",
 							"Rhagof", "Rhadangg", "Rhadangb", "Rhadangd", "Rhaperth", "Rhaatb", "Rhaamh", "Rhacil"]],
-					["U", ["U", "Uneg", "Ucad", "Ugof", "Utra", "Uberf"]],
+					["U", ["U", "Uneg", "Ucad", "Ugof", "Utra", "Uberf", "Ublaen"]],
 					["Gw", ["Gwest", "Gwfform", "Gwsym", "Gwacr", "Gwtalf", "Gwdig", "Gwllyth", "Gwann"]],
 					["Atd", ["Atdt", "Atdcan", "Atdchw", "Atdde", "Atdcys", "Atddyf"]],
 					["YFB", ["YFB"]],
@@ -167,6 +164,8 @@ morphological_table = [["Egu", ["E", "g", "u"]],
 						["Ugof", ["U", "gof"]],
 						["Utra", ["U", "tra"]],
 						["Uberf", ["U", "berf"]],
+			# Ublaen: Blaenddodiaid - prefixes
+						["Ublaen", ["U", "blaen"]],
 						["Gwest", ["Gw", "est"]],
 						["Gwfform", ["Gw", "fform"]],
 						["Gwsym", ["Gw", "sym"]],
@@ -210,119 +209,6 @@ morphological_table = [["Egu", ["E", "g", "u"]],
 					### Anon - a tag for Anonymized data: the contents of <anon> tags in the CorCenCC data may range from a telephone number to a single name to a complete name (title + given name + surname) to an entire address, so part of speech is not easy to assign
 						["Anon",["Anon"]]
 						]
-
-cyts = ["b", "c", "d", "f", "g", "j", "k", "l", "m", "n", "p", "r", "s", "t", "v", "z"]
-cyts_twp = ("b", "c", "d", "f", "g", "j", "k", "l", "m", "n", "p", "r", "s", "t", "v", "z")
-llaf = ["a", "e", "i", "o", "u", "y"]
-llaf_twp = ("a", "e", "i", "o", "u", "y")
-oldd_cym = ("o", "ian", "a", "io", "on", "wn", "ai", "em", "ais", "iaf", "odd", "och", "ion", "iwn", "wch", "ith", "yth", "iff", "yff", "wyd", "ech", "ent", "iais", "aist", "iodd", "ioch", "iwch", "iaist", "au", "on", "od", "iau", "ion", "oedd", "yn", "en", "af", "ach", "es", "iest", "est", "an")
-diw_cym = {"a" : ["Bgorch2u", "Bpres3u"],
-"af" : ["Bpres1u", "Anseith"],
-"ai" : ["Bamherff3u", "Ell"], 
-"ais" : ["Bgorff1u", "Bgorff2u"],
-"aist" : ["Bgorff2u"], 
-"an" : ["Bpres3ll"], 
-"ant" : ["Bpres3ll"], 
-"asai" : ["Bgorb3u"], 
-"asant" : ["Bgorff3ll"], 
-"asech" : ["Bgorb2ll"], 
-"asem" : ["Bgorb1ll"], 
-"asen" : ["Bgorb3ll"], 
-"asent" : ["Bgorb3ll"], 
-"asid" : ["Bgorbamhers"], 
-"asit" : ["Bgorb2u"], 
-"asoch" : ["Bgorff2ll"], 
-"asom" : ["Bgorff1ll"], 
-"aswn" : ["Bgorb1u"], 
-"ia" : ["Bgorch2u", "Bpres3u"],
-"iaf" : ["Bpres1u", "Anseith"],
-"iai" : ["Bamherff3u", "Ell"], 
-"iais" : ["Bgorff1u", "Bgorff2u"],
-"iaist" : ["Bgorff2u"], 
-"ian" : ["Bpres3ll"], 
-"iant" : ["Bpres3ll"], 
-"iasai" : ["Bgorb3u"], 
-"iasant" : ["Bgorff3ll"], 
-"iasech" : ["Bgorb2ll"], 
-"iasem" : ["Bgorb1ll"], 
-"iasen" : ["Bgorb3ll"], 
-"iasent" : ["Bgorb3ll"], 
-"iasid" : ["Bgorbamhers"], 
-"iasit" : ["Bgorb2u"], 
-"iasoch" : ["Bgorff2ll"], 
-"iasom" : ["Bgorff1ll"], 
-"iaswn" : ["Bgorb1u"], 
-"ech" : ["Bamherff2ll"], 
-"ed" : ["Bgorch3u"], 
-"em" : ["Bamherff1ll"], 
-"en" : ["Bgorch3ll", "Eu"],
-"ent" : ["Bamherff3ll", "Bgorch3ll"],
-"er" : ["Bdibdyfamhers", "Bgorchamhers"],
-"e" : ["Bamherff3u"], 
-"es" : ["Bgorff1u", "Bgorff2u"],
-"est" : ["Bgorff2u"],  
-"et" : ["Bamherff2u"], 
-"iech" : ["Bamherff2ll"], 
-"ied" : ["Bgorch3u"], 
-"iem" : ["Bamherff1ll"], 
-"ien" : ["Bgorch3ll", "Eu"],
-"ient" : ["Bamherff3ll", "Bgorch3ll"],
-"ier" : ["Bdibdyfamhers", "Bgorchamhers"],
-"ie" : ["Bamherff3u"], 
-"ies" : ["Bgorff1u", "Bgorff2u"],
-"iest" : ["Bgorff2u"],  
-"iet" : ["Bamherff2u"], 
-"i" : ["Bpres2u"], 
-"ia" : ["Bgorch2u", "Bpres3u"],
-"id" : ["Bamherffamhers"], 
-"iff" : ["Bdyf3u"], 
-"io" : ["Be"],
-"ion" : ["Bgorff1ll", "Bgorff3ll", "Ell"],
-"ir" : ["Bpresamhers"], 
-"it" : ["Bamherff2u"], 
-"ith" : ["Bdyf3u"], 
-"o" : ["Be", "Bdibdyf3u"],
-"och" : ["Bdibdyf2ll", "Bgorff2ll"],
-"odd" : ["Bgorff3u"], 
-"om" : ["Bdibdyf1ll"], 
-"on" : ["Bgorff1ll", "Bgorff3ll", "Ell"],
-"ont" : ["Bdibdyf3ll"],
-"ioch" : ["Bdibdyf2ll", "Bgorff2ll"],
-"iodd" : ["Bgorff3u"], 
-"iom" : ["Bdibdyf1ll"], 
-"ion" : ["Bgorff1ll", "Bgorff3ll", "Ell"],
-"iont" : ["Bdibdyf3ll"],  
-"soch" : ["Bgorff2ll"], 
-"som" : ["Bgorff1ll"], 
-"son" : ["Bgorff3ll"], 
-"wch" : ["Bgorch2ll", "Bpres2ll"],
-"wn" : ["Bamherff1u", "Bgorch1ll", "Bpres1ll"],
-"wyd" : ["Bgorffamhers"], 
-"wyf" : ["Bdibdyf1u"], 
-"iwch" : ["Bgorch2ll", "Bpres2ll"],
-"iwn" : ["Bamherff1u", "Bgorch1ll", "Bpres1ll"],
-"iwyd" : ["Bgorffamhers"], 
-"iwyf" : ["Bdibdyf1u"], 
-"iych" : ["Bdibdyf2u"],
-"od" : ["Ell"],
-"au" : ["Ell"],
-"iau" : ["Ell"],
-"oedd" : ["Ell"],
-"yn" : ["Eu"],
-"ach" : ["Anscym"]
-}
-
-toponymau_cym = ["aber", "allt", "caer", "gaer", "aer", "ngaer", "nghaer", "bryn", "capel", "gapel", "ngapel", "nghapel", "carn", "garn", "ngarn", "ngharn", "castell", "gastell", "ngastell", "nghastell", "cefn", "gefn", "ngefn", "nghefn", "coed", "goed", "ngoed", "nghoed", "croes", "groes", "ngroes", "nghroes", "crug", "grug", "ngrug", "nghrug", "cwm", "gwm", "ngwm", "nghwm", "cymer", "gymer", "ngymer", "nghymer", "dinas", "ddinas", "ninas", "dol", "ddol", "nol", "dyffryn", "ddyffryn", "nyffryn", "eglwys", "ffos", "garth", "ngarth", "glan", "lan", "nglan", "glyn", "lyn", "nglyn", "gwaun", "waun", "ngwaun", "hafod", "hendre", "llan", "llannerch", "llyn", "maen", "faen", "merthyr", "ferthyr", "moel", "foel", "morfa", "forfa", "mynydd", "fynydd", "nant", "ogof", "pant", "mhant", "bant", "parc", "mharc", "barc", "pen", "mhen", "ben", "penrhyn", "mhenrhyn", "benrhyn", "pentre", "mhentre", "bentre", "plas", "mhlas", "blas", "pont", "mhont", "bont", "porth", "mhorth", "borth", "pwll", "mhwll", "bwll", "rhaeadr", "raeadr", "rhiw", "riw", "rhos", "ros", "rhyd", "ryd", "sarn", "traeth", "draeth", "nhraeth", "tre", "dre", "nhre", "ynys", "ystrad"]
-
-def toponym(gair):
-	rhif = 9
-	canl = 0
-	while rhif > 2:
-		if len(gair) > rhif+3:
-			rhannau = []
-			if gair[0:rhif] in toponymau_cym:
-				return(True)
-		rhif -= 1
 
 def lookup_mutation(input_token):
 	""" Return a list of all possible Welsh mutations of a given token """

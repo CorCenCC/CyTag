@@ -30,6 +30,7 @@ import os
 """ Primary functions """
 
 def segment_text(input_text):
+	print("\n\n*****Segment: ", input_text)
 	""" Split text into segments (lines), and return them as a list """
 	
 	segments = input_text.splitlines()
