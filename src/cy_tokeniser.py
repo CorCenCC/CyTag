@@ -63,7 +63,6 @@ def remove_markup(tokens):
 
 def en_tag_check(sentence):
 	""" Ensure that content in <en> tags is kept together """
-	print("Checking sentence: ", sentence)
 	if sentence.find("<en") != -1:
 		sentence = re.sub(r'<en gair="[^"]+">', '<en>', sentence)
 		split_tags = re.split(r'(</?en>)', sentence)
@@ -73,7 +72,6 @@ def en_tag_check(sentence):
 		elif sentence.count("<en>") != sentence.count("</en>"):
 			sentence = (re.sub(r'(</?en>)', "", sentence))
 		else:
-			print("Balanced tags: ", en_split)
 			tag_close = en_split.index("</en>")
 			tag_open = tag_close - 2
 			tag_contents = en_split[tag_open+1]
@@ -83,10 +81,8 @@ def en_tag_check(sentence):
 			for item in tag_items:
 				split_punct = re.split(r"(\W+)", item)
 				split_punct = list(filter(None, split_punct))
-				print("SP: ", split_punct)
 				if len(split_punct) == 1:
 					individually_tagged = "<en>" + item + "</en>"
-					print(individually_tagged)
 					all_tagged.append(individually_tagged)
 				else:
 					for x in split_punct:
@@ -96,14 +92,12 @@ def en_tag_check(sentence):
 						else:
 							all_tagged.append(x)
 			sentence = " ".join(all_tagged)
-			print("Sentence joined: ", sentence)
 			if tag_close != len(en_split)-1:
 				if "<en>" in en_split[tag_close+1:]:
 					post_tags = en_tag_check("".join(en_split[tag_close+1:]))
 				else:
 					post_tags = "".join(en_split[tag_close+1:])
-				sentence += post_tags
-	print("After tag check: ", sentence)	
+				sentence += post_tags	
 	return sentence
 
 
@@ -326,18 +320,14 @@ def check_token(token):
 
 def tokenise(sentence, total_sentences=None, total_tokens=None):
 	""" Split an input sentence into tokens, and return them as tab-separated values """
-	print("Sentence 329: ", sentence)
 	split_tokens = ""
 	if sentence[-1:] == "." and sentence[-2:] != " .":
 		sentence = "{}{}".format(sentence[:-1], " .")
 	tokens = token_split(sentence, total_tokens)
-	print("Tokens are now:", tokens)
 	tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
 	print("Sentence generated %s tokens." % len(tokens))
-	print("From: ", sentence)
-	print("To: ", split_tokens)
 	return(split_tokens)
 
 def tokeniser(input_data):
@@ -348,7 +338,6 @@ def tokeniser(input_data):
 		for file_id, file in enumerate(input_data):
 			with open(file, encoding="utf-8") as file_text:
 				for segment_id, segment in enumerate(segment_text(file_text.read())):
-					print("Segment: ", segment)
 					for sentence_id, sentence in enumerate(split_sentences(segment)):
 						total_sentences += 1
 						split_tokens = tokenise(sentence, total_sentences, total_tokens)
