@@ -545,7 +545,7 @@ def process_multiple_reading(token_id, token, readings):
 	processed_token = ""
 	processed_readings = list_readings(readings)
 	position, lemma = processed_readings[0][0], processed_readings[0][1].replace("_", " ")
-	if lemma=="":
+	if lemma == "":
 		lemma = token
 	checked_tags = check_gazetteers(token)
 	if checked_tags != ["unk", "unk"]:
@@ -572,7 +572,7 @@ def process_double_reading(token_id, token, readings):
 	processed_token = ""
 	processed_readings = list_readings(readings)
 	position, lemma = processed_readings[0][0], processed_readings[0][1].replace("_", " ")
-	if lemma=="":
+	if lemma == "":
 		lemma = token
 	if "E p b" in [x[2] for x in processed_readings] and "E p g" in [x[2] for x in processed_readings]:
 		checked_tags = check_gazetteers(token)
@@ -613,7 +613,7 @@ def process_single_reading(token_id, token, reading):
 		reading = reading.replace(quoted_lemma, quoted_lemma.replace(" ", "_"))
 	info = re.split(r"\s+", reading.strip())
 	position, lemma = info[1][1:-1], info[0][1:-1].replace("_", " ")
-	if lemma=="":
+	if lemma == "":
 		lemma = token
 	if info[-1] != "unk":
 		if info[-2] == "+":
