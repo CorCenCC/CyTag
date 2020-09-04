@@ -42,24 +42,39 @@ def split_sentences(input_text):
 	""" Split a string of text into sentences, and return them as a list """
 
 	# Split the given input text into sentences based on a regex pattern - whitespace preceded by certain punctuation marks, but not by certain combinations of letters and punctuation marks or by any of the negative lookbehind assertions created for the 'abbreviations' gazetteer
-	pattern = gazetteers["abbreviations_regex"] + r"(?<=[.|!|?])(?<!\s[A-Z][.])(?<![A-Z][.][A-Z][.])(?<![.]\s[.])(?<![.][.])[\s]"
-	sentences = re.split(pattern, input_text)
-	# Iterate through the split sentences
-	k = 0
-	while k < len(sentences):
-		# If an empty sentence is encountered, delete it
-		if sentences[k] == "":
-			del sentences[k]
-		else:
-			# If this is not the last sentence...
-			if k < len(sentences)-1:
-				# If the next sentence splits according to the regex pattern...
-				if re.match(pattern, sentences[k+1]):
-					# Append the next sentence to the current one, and delete it
-					sentences[k] = sentences[k] + sentences[k+1].strip()
-					del sentences[k+1]
-			k+=1
-	return(sentences)
+	output = []
+	input_text = re.sub(r'<en( gair ?= ?"[^"]+")?> ?', "<en>", input_text)
+	input_text = re.sub(" </en>", "</en>", input_text)
+	if input_text.find("<en>") != -1 or input_text.find("</en>") != -1:
+		en_tagged = re.split(r"(<en>[^<]+</en>)", input_text)
+		en_tagged = list(filter(None, en_tagged))
+		for section in en_tagged:
+			if section.startswith("<en>") and section.endswith("</en>"):
+				output.append(section)
+			else:
+				section = re.sub(r"</?en>", "", section)
+				section = split_sentences(section)
+				output += section
+	else:
+		pattern = gazetteers["abbreviations_regex"] + r"(?<=[.|!|?])(?<!\s[A-Z][.])(?<![A-Z][.][A-Z][.])(?<![.]\s[.])(?<![.][.])[\s]"
+		sentences = re.split(pattern, input_text)
+		# Iterate through the split sentences
+		k = 0
+		while k < len(sentences):
+			# If an empty sentence is encountered, delete it
+			if sentences[k] == "":
+				del sentences[k]
+			else:
+				# If this is not the last sentence...
+				if k < len(sentences)-1:
+					# If the next sentence splits according to the regex pattern...
+					if re.match(pattern, sentences[k+1]):
+						# Append the next sentence to the current one, and delete it
+						sentences[k] = sentences[k] + sentences[k+1].strip()
+						del sentences[k+1]
+				k+=1
+		output += sentences
+	return output
 
 def sentence_splitter(input_data):
 	""" Take an input string or a list of files, and return a list of sentences (file separated if applicable) """
