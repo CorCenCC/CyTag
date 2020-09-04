@@ -327,7 +327,6 @@ def tokenise(sentence, total_sentences=None, total_tokens=None):
 	tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
-	print("Sentence generated %s tokens." % len(tokens))
 	return(split_tokens)
 
 def tokeniser(input_data):

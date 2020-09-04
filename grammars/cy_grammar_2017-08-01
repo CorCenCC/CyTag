@@ -602,4 +602,4 @@ SECTION
 SELECT ("so" :so:);
 SELECT (Ban) if (1 (E));
 SELECT (Rha) if (1 (Ar));
-SELECT (Rha) if (not 1 nounlike)
+SELECT (Rha) if (not 1 nounlike);

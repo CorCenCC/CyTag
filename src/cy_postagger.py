@@ -53,7 +53,7 @@ from shared.load_gazetteers import *
 from shared.load_lexicon import *
 from shared.reference_lists import *
 
-with open("cy_gazetteers/corcencc.en_words") as GeirEN:
+with open("cy_gazetteers/corcencc.en_words".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEN:
 	en_ten_thou = set(GeirEN.read().splitlines())
 
 stats = {"pre-cg": 
