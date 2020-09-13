@@ -53,8 +53,11 @@ from shared.load_gazetteers import *
 from shared.load_lexicon import *
 from shared.reference_lists import *
 
-with open("cy_gazetteers/corcencc.en_words") as GeirEN:
+with open("cy_gazetteers/corcencc.en_words".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEN:
 	en_ten_thou = set(GeirEN.read().splitlines())
+
+with open("cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
+	trade_names = set(GeirEraill.read().splitlines())
 
 stats = {"pre-cg": 
 			{"untagged": 0, "definite_tag": 0, "with_readings": 0, "single_reading": 0, "multiple_readings": 0, "without_readings": 0, "no_readings": 0, "assumed_proper": 0},
@@ -104,6 +107,8 @@ def find_definite_tags(token):
 		pos = "Anon:Anon"
 	elif token.startswith("<anon>"):
 		pos = "Anon:Anon"
+	elif token in ["enwb", "enwg", "enwbg"]:
+		pos = "Anon:Anon"
 	elif token[:3] == "<en":
 		pos = "Gw:Gwest"
 	elif re.match(r"[.,:;\"\'!?\-\—<>{}\[\]()]", token):
@@ -117,11 +122,11 @@ def find_definite_tags(token):
 			pos = "Atd:Atdde"
 		if token is "-":
 			pos = "Atd:Atdcys"
-		if token is "\'" or token is "\"":
+		if re.match(r"^[\'\"]+$", token):
 			pos = "Atd:Atdyf"	
 	elif re.match(r"[^\s^.,:;!?\-\—\'\"<>{}\[\]()^\w]", token):
 		pos = "Gw:Gwsym"
-	elif re.match(r"^-?[0-9]+$", token):
+	elif re.match(r"^-?[0-9\.,]+$", token):
 		pos = "Gw:Gwdig"
 	elif pos == "" and token in gazetteers["acronyms"]:
 		pos = "Gw:Gwacr"
@@ -362,12 +367,14 @@ def check_gazetteers(token):
 			tags.append("Ep")
 		elif token in gazetteers["surnames"] or token in gazetteers["places"]:
 			tags.append("Ep")
+	elif token in trade_names:
+		tags.append("E")
+		tags.append("Ep")
 	else:
 		unmutated_tokens = lookup_mutation(token)
 		if len(unmutated_tokens) != 0:
 			for unmut_tok in unmutated_tokens:
-				if unmut_tok[0] in gazetteers["givennames_m"] or unmut_tok[0] in gazetteers["givennames_f"] or unmut_tok[0] in gazetteers["surnames"] or unmut_tok[0] in gazetteers["places"]:
-
+				if unmut_tok[0] in gazetteers["givennames_m"] or unmut_tok[0] in gazetteers["givennames_f"] or unmut_tok[0] in gazetteers["surnames"] or unmut_tok[0] in gazetteers["places"] or unmut_tok[0] in trade_names:
 					tags = ["Ep", unmut_tok[1]]
 				else:
 					tags = ["unk", "unk"]
@@ -376,10 +383,10 @@ def check_gazetteers(token):
 	return tags
 
 def list_readings(readings):
-	""" Convert readings in string (VISL CG-3 output) format to a list of reading and their component parts """
+	""" Convert readings in string (VISL CG-3 output) format to a list of readings and their component parts """
 	processed_readings = []
 	for reading in readings:
-		for lemma in re.findall(r'\"(.+?)\"', reading):
+		for lemma in re.findall(r'\"(.+?)\" {', reading):
 			reading = reading.replace(lemma, lemma.replace(" ", "_"))
 		mutation = None
 		info = re.split(r"\s+", reading.strip())
@@ -475,7 +482,7 @@ def process_single_reading(token_id, token, reading):
 	""" Return a token with a single reading as a string of tab-separated values """
 	processed_token = ""
 	position, lemma, mutation, basic_tag, rich_tag = "", "", "", "", ""
-	for quoted_lemma in re.findall(r'\"(.+?)\"', reading):
+	for quoted_lemma in re.findall(r'\"([^{]+?)\" ', reading):
 		reading = reading.replace(quoted_lemma, quoted_lemma.replace(" ", "_"))
 	info = re.split(r"\s+", reading.strip())
 	position, lemma = info[1][1:-1], info[0][1:-1].replace("_", " ")
@@ -665,6 +672,7 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 				output["tree"] = etree.Element("corpus")
 				output["tree"].attrib["name"] = output_name
 			for file_id, file in enumerate(input_data):
+				print("Processing file %s of %s: %s " % (str(file_id+1), str(len(input_data)), file))
 				file_element = None
 				if output["xml"] != None:
 					file_element = etree.Element("file")
