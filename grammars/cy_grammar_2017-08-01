@@ -168,10 +168,13 @@ SELECT ("hynny" Ban) if (-1 ("rhai" "pethau"));
 # MA
 LIST preMA = "wythnos" "blwyddyn" "mis";
 SELECT ("<ma>" Ban) if (-1 (preMA) or (E));
+SELECT ("<ma>" B) if (1 ("<'r>"));
+SELECT ("<ma>" B) if (1 ("yna"));
 # NA
 SELECT ("<na>"i "dyna") if (1 ("<beth>"i));
 SELECT ("<na>"i Cys) if (*1 ("<chwaith>")) ;
 SELECT ("<na>"i :than:) if (-1 (Ans cym));
+SELECT ("<'na>" Adf) if (-1 ("mae"));
 # OES
 REMOVE ("<oes>" B) if (-1 ("ystod"));
 SELECT ("<oes>" B) if (-1 ("a"));
@@ -225,7 +228,7 @@ SELECT ("so" B 3 u) if (1 (Rha 3 ll));
 SELECT ("so" Adf) if (1 ("." "," ":" "!"));
 SELECT ("so" Adf) if (-1 ("." "," ":" "!"));
 SELECT ("so" Adf) if (1 (B));
-REMOVE ("so" Adf) if (2 ("yn" "wedi"));
+REMOVE ("so" Adf) if (2 ("yn") or ("wedi"));
 
 
 SECTION
@@ -276,7 +279,7 @@ select ("yn" U tra) if (1 (Ans cym) or (Adv) or (quan sm) or ("gor" U));  # yn d
 select ("yn" U tra) if (1C (Ans)); 
 select ("yn" U tra) if (1 (E sm)) (not 1 language);
 select ("yn" U tra) if (1 (Rhi tref sm));
-select ("yn" U tra) if (-1 ("bod")) (1 (Rhi fol) or (Rhi fol d)) (2 (E));  # mae'/n/ pymtheg mis
+select ("yn" U tra) if (-1 ("bod")) (1 (Rhi fol) or (Rhi fol d)) (2 (E));  # mae'/n/ bymtheg mis
 select ("yn" U tra) if (-1 ("bod")) (1 (unspec));  # mae'/n/ full speed
 
 select (YFB) if (not 1 inflected)(not 1 (Rha dib));  # maybe tighten this to specify all the POS that can occur, not the ones that can't?
@@ -409,6 +412,8 @@ select ("iawn" :very:) if (-1 (Ans));  # hapus /iawn/
 select ("iawn" :OK:) if (not -1 (Ans));  # /iawn/ ta
 select ("pell" Adf) if (not 1 (Cys));  # ond /bellach/ nid yw...
 select ("yna" :there:) if (-1 ("bod"));  # mae /na/ dipyn
+select ("yna" :in:) if (1 ("mi"));
+remove ("yna" :in:) if (not 1 ("mi"));
 select ("dim" :not:) if (-1 ("bod"));  # does /dim/
 select ("dim" :not:) if (-1 (Rha)) (-2 (B));  # dyn nhw /dim/
 select ("dim" :not:) if (1 (E));  # /dim/ problem

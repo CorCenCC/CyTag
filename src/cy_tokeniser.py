@@ -42,6 +42,9 @@ contractions_and_prefixes = {}
 with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
 	contractions_and_prefixes = json.load(contractionsprefixes_json) 
 
+with open("cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
+	trade_names = set(GeirEraill.read().splitlines())
+
 def remove_markup(tokens):
 	""" Remove markup tags (opening, closing, or both) from tokens """
 	for i, token in enumerate(tokens):
@@ -59,7 +62,7 @@ def remove_markup(tokens):
 	for token in tokens:
 		tok_split = re.split(r"(<[sS](?:\d+|\?)>)", token)
 		final_tokens += list(filter(None, tok_split))
-	return(final_tokens)
+	return final_tokens
 
 def en_tag_check(sentence):
 	""" Ensure that content in <en> tags is kept together """
@@ -100,7 +103,6 @@ def en_tag_check(sentence):
 				sentence += post_tags	
 	return sentence
 
-
 def token_split(sent, total_tokens):
 	""" Use regular expressions to split a sentence into a list of tokens, before handling more complex cases """
 	tokens = []
@@ -109,11 +111,10 @@ def token_split(sent, total_tokens):
 		sent_apos = (re.sub(r"[’‘`]", "'", sent))
 		sentence = (re.sub(r"[‑—–]", "-", sent_apos))
 		sentence = en_tag_check(sentence)
-		regexed_tokens = re.split(r"\s(?!\S[.])|(?<!\S[.])\s", sentence)
-		token_list = list(filter(None, regexed_tokens))
+		token_list = list(filter(None, re.split(r"\s", sentence)))
 		token_list = remove_markup(token_list)
 		for i, token in enumerate(token_list):
-			if token != '':
+			if token not in ['', ' ']:
 				tokens = tokens + check_token(token)
 	return(tokens)
 
@@ -121,6 +122,8 @@ def check_token(token):
 	### Words tagged as English (<en>point</en>) should be
 	### returned with their tagging so that the postagger
 	### can tag them correctly.
+	if len(token) == 1:
+		return [token]
 	match_english = re.match(r"^(<en( gair=\"[a-zA-Z]+\")?>([\w'\-]+)</en>)(.*)$", token)
 	if match_english is not None:
 		no_gair = (re.sub(r"<en gair=\"[a-zA-Z]+\" ?>", "<en>", match_english.group(1)))
@@ -150,11 +153,20 @@ def check_token(token):
 			else:
 				result += check_token(s)
 		return result
+	### !!!!?:!! => ! !!!?:!! 
+	if token[0] in ["\\", ",", ".", ",", ":", ";", '"', "!", "?", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
+		return [token[0]] + check_token(token[1:])
+	if token[-1] in ["\\", ",", ".", ",", ":", ";", '"', "!", "?", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
+		return check_token(token[0:-1]) + [token[-1]]
 	### !!!! aaaaa Ffffff 
 	if len(set(token.lower())) == 1:
 		return [token]
 	### gair 100
 	if token.isalpha() or token.isnumeric():
+		return [token]
+	### B.B.C.
+	match_initialism = re.match(r"^([a-zA-Z]\.)+$", token)
+	if match_initialism is not None:
 		return [token]
 	### word09:!!!!!!() => word09  :!!!!!!()
 	match_end = re.match(r"^([\w']+)([^\w'\-¢%]+)$", token)
@@ -166,17 +178,47 @@ def check_token(token):
 		return check_token(match_start.group(1)) + check_token(match_start.group(2))
 	### hashtags
 	if len(re.findall(r"#", token)) > 0:
-		if re.match(r"#\w+", token):
+		if re.match(r"#\w+$", token):
 			return [token]
-		hashtag_front = re.match(r"^(#\w+)([^\w].*)$", token)
+		hashtag_front = re.match(r"^(#\w+)(\W.*)$", token)
 		if hashtag_front is not None:
 			return [hashtag_front.group(1)] + check_token(hashtag_front.group(2))
-		hashtag_end = re.match(r"^(.*)(#[\w]+)$", token)
+		hashtag_end = re.match(r"^(.*)(#\w+)$", token)
 		if hashtag_end is not None:
 			return check_token(hashtag_end.group(1)) + [hashtag_end.group(2)]
-		hashtag_mid = re.match(r"^(.+)(#\w+)([^\w].*)$", token)
+		hashtag_mid = re.match(r"^(.+)(#\w+)(\W.*)$", token)
 		if hashtag_mid is not None:
 			return check_token(hashtag_mid.group(1)) + [hashtag_mid.group(2)] + check_token(hashtag_mid.group(3))
+	### hyphens
+	if len(re.findall("-", token)) != 0:
+		if token.lower() in cy_lexicon:
+			return [token]
+		elif token[0] == "-":
+			return ["-"] + check_token(token[1:])
+		elif token[-1] == "-":
+			return ["-"] + check_token(token[:-1])
+		elif token.count("-") == 1:
+			hyph_index = token.index("-")
+			if token[:hyph_index+1] in cy_lexicon:
+				return [token[:hyph_index+1]] + check_token(token[hyph_index+1:])
+			else:
+				return check_token(token[:hyph_index]) + ["-"] + check_token(token[hyph_index+1:])
+		else:
+			return [token]
+	### word;word => word ; word
+	match_semic = re.match(r"^([\w]+);([\w]+)$", token)
+	if match_semic is not None:
+		apos_replace1 = (match_semic.group(1))
+		apos_replace2 = "'" + (match_semic.group(2))
+		if apos_replace2.lower() in cy_lexicon:
+			split2 = ";" + apos_replace2[1:]
+			return [(match_semic.group(1)), split2]
+		else:
+			return [(match_semic.group(1)), ";", (match_semic.group(2))]
+	### word!word => word ! word
+	match_mid = re.match(r"^([A-Za-zÂÊÎÔÛŴŶÄÏÖËÁÉÍÓÚẂÝÀÈÌÒÙẀỲâêîôûŵŷäïöëáéíóúẃýàèìòùẁỳ']+)([^A-Za-zÂÊÎÔÛŴŶÄÏÖËÁÉÍÓÚẂÝÀÈÌÒÙẀỲâêîôûŵŷäïöëáéíóúẃýàèìòùẁỳ']+)([A-Za-zÂÊÎÔÛŴŶÄÏÖËÁÉÍÓÚẂÝÀÈÌÒÙẀỲâêîôûŵŷäïöëáéíóúẃýàèìòùẁỳ]+)$", token)
+	if match_mid is not None:
+		return check_token(match_mid.group(1)) + check_token(match_mid.group(2)) + check_token(match_mid.group(3))
 	### apostrophes
 	if len(re.findall("'", token)) != 0:
 		if token.lower() in cy_lexicon:
@@ -249,41 +291,6 @@ def check_token(token):
 							else:
 								result = result + check_token(s)
 			return result
-	### hyphens
-	if len(re.findall("-", token)) != 0:
-		if token.lower() in cy_lexicon:
-			return [token]
-		elif token[0] == "-":
-			return ["-"] + check_token(token[1:])
-		elif token[-1] == "-":
-			return ["-"] + check_token(token[:-1])
-		elif token.count("-") == 1:
-			hyph_index = token.index("-")
-			if token[:hyph_index+1] in cy_lexicon:
-				return [token[:hyph_index+1]] + check_token(token[hyph_index+1:])
-			else:
-				return [token[:hyph_index], "-"] + check_token(token[hyph_index+1:])
-		else:
-			return [token]
-	### word;word => word ; word
-	match_semic = re.match(r"^([\w]+);([\w]+)$", token)
-	if match_semic is not None:
-		apos_replace1 = (match_semic.group(1))
-		apos_replace2 = "'" + (match_semic.group(2))
-		if apos_replace2.lower() in cy_lexicon:
-			split2 = ";" + apos_replace2[1:]
-			return [(match_semic.group(1)), split2]
-		else:
-			return [(match_semic.group(1)), ";", (match_semic.group(2))]
-	### word!word => word ! word
-	match_mid = re.match(r"^([\w]+)([^\w\*]+)([\w]+)$", token)
-	if match_mid is not None:
-		return check_token(match_mid.group(1)) + check_token(match_mid.group(2)) + check_token(match_mid.group(3))
-	### !!!!?:!! => ! !!!?:!! 
-	if token[0] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
-		return [token[0]] + check_token(token[1:])
-	if token[-1] in ["\\", ",", ".", ",", ":", ";", "“", "”", '"', "!", "?", "<", ">", "{", "}", "[", "]", "(", ")", "*", "…", "¶", "+"]:
-		return check_token(token[0:-1]) + [token[-1]]
 	### numerical strings
 	if token[0].isnumeric():
 		### 1990au 1990s 90s 90's 90au
@@ -321,10 +328,9 @@ def check_token(token):
 def tokenise(sentence, total_sentences=None, total_tokens=None):
 	""" Split an input sentence into tokens, and return them as tab-separated values """
 	split_tokens = ""
-	if sentence[-1:] == "." and sentence[-2:] != " .":
-		sentence = "{}{}".format(sentence[:-1], " .")
+	#if sentence[-1:] == "." and sentence[-2:] != " .":
+		#sentence = "{}{}".format(sentence[:-1], " .")
 	tokens = token_split(sentence, total_tokens)
-	tokens = remove_markup(tokens)
 	for token_id, token in enumerate(tokens):
 		split_tokens += "{}\t{}\t{}\n".format(total_tokens+token_id+1, token, "{},{}".format(total_sentences, token_id+1))
 	return(split_tokens)
