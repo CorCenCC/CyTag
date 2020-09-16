@@ -211,6 +211,7 @@ SELECT ("a" U gof) if (1 ("<oes>"i) or ("<fydd>"i)) (-1 (<<<));
 SELECT ("a" U gof) if (-1 (<<<)) (*1 ("?"));
 REMOVE (! "a" U gof) if (-1 (<<<)) (1 ("<oes>"i) or ("<fydd>"i)) (*1 ("?"));
 SELECT ("â" Ar) (-1* ("mynd") or ("dod") BARRIER (B));
+SELECT ("<a>"i "mynd") if (1 ("<i>")) (2 (Ar));
 
 # DIM
 SELECT ("<dim>" Ban) if (1 (E)); 
@@ -219,17 +220,25 @@ SELECT ("<dim>" Ban) if (1 (E));
 SELECT ("gofyn" E) if (-1 ("dim"));
 
 # SO
+SELECT ("so" Adf) if (1 (Atd));
+SELECT ("<So>" Adf) if (not 1 (Rha) or (E));
+REMOVE ("so" B) if (not 1 (Rha));
+SELECT ("so" Adf) if (1 (B));
+REMOVE ("so" Adf) if (2 ("yn") or ("wedi"));
 SELECT ("so" B 1 u) if (1 (Rha 1 u));
 SELECT ("so" B 2 u) if (1 (Rha 2 u));
 SELECT ("so" B 3 u) if (1 (Rha 3 u));
 SELECT ("so" B 1 u) if (1 (Rha 1 ll));
 SELECT ("so" B 2 u) if (1 (Rha 2 ll));
 SELECT ("so" B 3 u) if (1 (Rha 3 ll));
-SELECT ("so" Adf) if (1 ("." "," ":" "!"));
-SELECT ("so" Adf) if (-1 ("." "," ":" "!"));
-SELECT ("so" Adf) if (1 (B));
-REMOVE ("so" Adf) if (2 ("yn") or ("wedi"));
 
+# MAEN
+SELECT ("<maen>"i "bod") if (1 ("nhw"));
+
+# YM
+SELECT ("<ym>"i Ebych) if (not 1 ("<m.*>"ri));
+SELECT ("<ym>"i Ebych) if (not 1 (E));
+SELECT ("<ym>"i Ar) if (not 1 ("<m.*>"ri));
 
 SECTION
 
@@ -604,7 +613,8 @@ SELECT ("ei" Rha dib 3 g u) IF (-2 (B)) (-1 (E p g));
 ##substitute (adj :rear: <Ans cad u>) (adv :after: <Adf>) (adj :rear: <Ans cad u>) if (0 ("ôl")) (-1 (mw-ls));  # ar ôl
 
 SECTION
-SELECT ("so" :so:);
+SELECT ("so" Adf);
 SELECT (Ban) if (1 (E));
 SELECT (Rha) if (1 (Ar));
 SELECT (Rha) if (not 1 nounlike);
+SELECT (Ar sym);

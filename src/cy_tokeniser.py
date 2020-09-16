@@ -48,10 +48,20 @@ with open("cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.a
 def remove_markup(tokens):
 	""" Remove markup tags (opening, closing, or both) from tokens """
 	for i, token in enumerate(tokens):
-		if token[:3] in ["<D>", "<N>"]:
+		if token[:3] == "<D>":
 			tokens[i] = tokens[i][3:]
-		if token[-4:] in ["</D>", "</N>"]:
-			tokens[i] = tokens[i][:-4]	
+		if token[-4:] == "</D>":
+			tokens[i] = tokens[i][:-4]
+		if token in ["<D>", "</D>", "<saib>", "<=>", "</=>", "<aneglur>", "<aneglur?>"]:
+			tokens[i] = ""
+		if token == "<N>":
+			tokens[i] = "["
+		if token[:3] == "<N>":
+			tokens[i] = "[" + tokens[i][3:]
+		if token == "</N>":
+			tokens[i] = "["
+		if token[-4:] == "</N>":
+			tokens[i] = tokens[i][:-4] + "]"
 		if token[:7] == "<rhegi>":
 			tokens[i] = tokens[i][7:]
 		if token[-8:] == "</rhegi>":
@@ -140,7 +150,7 @@ def check_token(token):
 	match_speaker_tag = re.match(r"^<[sS](\d+|\?)>$", token)
 	if match_speaker_tag is not None:
 		return [token]
-	if token in ["<=>", "</=>", "<saib>", "<aneglur>"]:
+	if token in ["<=>", "</=>", "<saib>", "<aneglur>", "<aneglur?>"]:
 		return [token]
 	if len(re.findall(r"[\\/]", token)) > 0:
 		if len(set(token)) == 1:
