@@ -31,6 +31,7 @@ import sys
 import os
 import argparse
 import re
+import unicodedata2
 import subprocess
 import time
 import json
@@ -182,7 +183,7 @@ def format_multireading_lookup(readings, token, token_position):
 		for reading in readings:
 			en_lemmas = format_en_lemmas(reading[3])
 			morphology = tag_morphology(reading[1][0])
-			tags = " ".join(tag_morphology(reading[1][0]))
+			tags = " ".join(morphology)
 			reading_string += "\t\"{}\" {{{}}} [cy] {} {}\n".format(reading[2], token_position, tags, en_lemmas)
 		stats["pre-cg"]["with_readings"] += 1
 	else:
@@ -202,6 +203,13 @@ def handle_empty_lookup(token):
 	count_readings = False
 	reading_string = "" 
 	token_parts = token[0].lower().split("-")
+	if token[0].isalpha():
+		deaccent = unicodedata2.normalize('NFKD', token[0]).encode('ASCII', 'ignore').decode('ASCII')
+		if token != deaccent and deaccent != "":
+			readings = lookup_multiple_readings([deaccent])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
 	if token[0].lower() in contractions_and_prefixes.keys():
 		if contractions_and_prefixes[token[0].lower()][0] == "contraction":
 			readings = lookup_multiple_readings(contractions_and_prefixes[token[0].lower()][1])	
@@ -414,7 +422,7 @@ def process_still_ambiguous(token_id, token, readings, token_position):
 	return(processed_token)
 
 def process_multiple_reading(token_id, token, readings):
-	""" Return a token with a single reading as a string of tab-separated values """
+	""" Return a token with multiple readings as a string of tab-separated values """
 	processed_token = ""
 	processed_readings = list_readings(readings)
 	position, lemma = processed_readings[0][0], processed_readings[0][1].replace("_", " ")
