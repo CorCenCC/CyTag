@@ -35,6 +35,7 @@ import unicodedata2
 import subprocess
 import time
 import json
+import shutil
 
 missing_libraries = []
 try:
@@ -54,10 +55,12 @@ from shared.load_gazetteers import *
 from shared.load_lexicon import *
 from shared.reference_lists import *
 
-with open("cy_gazetteers/corcencc.en_words".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEN:
-	en_ten_thou = set(GeirEN.read().splitlines())
+with open("{}/../cy_gazetteers/corcencc.en_words".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEN:
+	en_dict = set(GeirEN.read().splitlines())
+with open("{}/../cy_gazetteers/corcencc.en_words_full".format(os.path.dirname(os.path.abspath(__file__)))) as GeirENmawr:
+	en_dict_full = set(GeirENmawr.read().splitlines())
 
-with open("cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
+with open("{}/../cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
 	trade_names = set(GeirEraill.read().splitlines())
 
 stats = {"pre-cg": 
@@ -72,7 +75,7 @@ output = {"directory": None, "readings": None, "readingsPostCG": None, "unknown_
 
 sentence_lengths = []
 
-vislcg3_location = subprocess.Popen(["which", "vislcg3"], stdout=subprocess.PIPE).communicate()[0].strip()
+vislcg3_location = shutil.which("vislcg3")
 
 existing_unknown_words = []
 new_unknown_words = []
@@ -129,10 +132,14 @@ def find_definite_tags(token):
 		pos = "Gw:Gwsym"
 	elif re.match(r"^-?[0-9\.,]+$", token):
 		pos = "Gw:Gwdig"
+	elif re.match(r"^\d+\.?\d+?%", token):
+		pos = "Gw:Gwdig"
 	elif pos == "" and token in gazetteers["acronyms"]:
 		pos = "Gw:Gwacr"
 	elif pos == "" and token.lower() in gazetteers["abbreviations"]:
 		pos = "Gw:Gwtalf"
+	elif pos == "" and token.lower() in ["html", "url", "http", "https"]:
+		pos = "Gw:Gwacr"
 	return pos
 
 def lookup_readings(token):
@@ -244,14 +251,8 @@ def handle_empty_lookup(token):
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if token[0][-1:] in ["a", "e"]:
-			""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
-			readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
-			if len(readings) > 0:
-				count_readings = True
-				reading_string += format_multireading_lookup(readings, token[0], token[1])
-		if token[0][-1:] in ["a", "e"]:
-			""" Check for plural endings spelled with "e"/"a" instead of "au" or "ai" """
-			readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1])])
+			""" Check for endings spelled with "e"/"a" instead of "au" or "ai" """
+			readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1]), "{}ae".format(token[0][:-1])])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
@@ -292,13 +293,15 @@ def handle_empty_lookup(token):
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
 		if not count_readings == True:
-			if token[0].lower() in en_ten_thou:
+			if token[0].lower() in en_dict:
 				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
 			elif token[0][0].isupper():
 				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p g", token[0])
 				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p b", token[0])
 				stats["pre-cg"]["with_readings"] += 1
 				stats["pre-cg"]["assumed_proper"] += 1
+			elif token[0].lower() in en_dict_full:
+				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
 			else:
 				reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
 				stats["pre-cg"]["without_readings"] += 1
@@ -375,14 +378,16 @@ def check_gazetteers(token):
 			tags.append("Ep")
 		elif token in gazetteers["surnames"] or token in gazetteers["places"]:
 			tags.append("Ep")
-	elif token in trade_names:
+	elif token.lower() in trade_names:
 		tags.append("E")
 		tags.append("Ep")
 	else:
 		unmutated_tokens = lookup_mutation(token)
+
 		if len(unmutated_tokens) != 0:
 			for unmut_tok in unmutated_tokens:
-				if unmut_tok[0] in gazetteers["givennames_m"] or unmut_tok[0] in gazetteers["givennames_f"] or unmut_tok[0] in gazetteers["surnames"] or unmut_tok[0] in gazetteers["places"] or unmut_tok[0] in trade_names:
+				unmut_tok = unmut_tok[0][0].upper() + unmut_tok[0][1:].lower()
+				if unmut_tok[0] in gazetteers["givennames_m"] or unmut_tok[0] in gazetteers["givennames_f"] or unmut_tok[0] in gazetteers["surnames"] or unmut_tok[0] in gazetteers["places"] or unmut_tok[0].lower() in trade_names:
 					tags = ["Ep", unmut_tok[1]]
 				else:
 					tags = ["unk", "unk"]

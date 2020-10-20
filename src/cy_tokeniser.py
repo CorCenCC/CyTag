@@ -42,11 +42,44 @@ contractions_and_prefixes = {}
 with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
 	contractions_and_prefixes = json.load(contractionsprefixes_json) 
 
-with open("cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
+with open("{}/../cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
 	trade_names = set(GeirEraill.read().splitlines())
 
+def check_html_tags(token):
+	if token[0] == "<" and ">" in token:
+		token_split = list(filter(None, token.split(">")))
+		if token[1] == "/":
+			tag_content = token_split[0][2:]
+		else:
+			tag_content = token_split[0][1:]
+		content_split = list(filter(None, tag_content.split(" ")))
+		if content_split[0] in html_tags:
+			whole_tag = token_split[0] + ">"
+			if whole_tag == token:
+				token = ""
+			else:
+				token = token.replace(whole_tag, '')
+				token = check_html_tags(token)
+	elif token[-1] == ">" and "<" in token:
+		token_split = list(filter(None, token.split("<")))
+		if token_split[-1][0] == "/":
+			tag_content = token_split[-1][1:-1]
+		else:
+			tag_content = token_split[-1][:-1]
+		content_split = list(filter(None, tag_content.split(" ")))
+		if content_split[0] in html_tags:
+			whole_tag = "<" + token_split[-1]
+			if whole_tag == token:
+				token = ""
+			else:
+				token = token.replace(whole_tag, '')
+				token = check_html_tags(token)
+	else:
+		return token
+	return token
+
 def remove_markup(tokens):
-	""" Remove markup tags (opening, closing, or both) from tokens """
+	""" Remove markup tags (opening, closing, or both) from tokens, with the exception of some tags with special meaning for the CorCenCC data """
 	for i, token in enumerate(tokens):
 		if token[:3] == "<D>":
 			tokens[i] = tokens[i][3:]
@@ -66,13 +99,19 @@ def remove_markup(tokens):
 			tokens[i] = tokens[i][7:]
 		if token[-8:] == "</rhegi>":
 			tokens[i] = tokens[i][:-8]
-	for i,tok in enumerate(tokens):
-		tokens[i] = (re.sub(r"<ym>", "ymm", tok))
-	final_tokens = []
-	for token in tokens:
-		tok_split = re.split(r"(<[sS](?:\d+|\?)>)", token)
-		final_tokens += list(filter(None, tok_split))
-	return final_tokens
+	for i, token in enumerate(tokens):
+		if "<" in token and ">" in token:
+			tokens[i] = check_html_tags(token)
+	tokens = list(filter(None, tokens))
+	if tokens != []:
+		for i,tok in enumerate(tokens):
+			tokens[i] = (re.sub(r"<ym>", "ymm", tok))
+		final_tokens = []
+		for token in tokens:
+			tok_split = re.split(r"(<[sS](?:\d+|\?)>)", token)
+			final_tokens += list(filter(None, tok_split))
+		return final_tokens
+	return []
 
 def en_tag_check(sentence):
 	""" Ensure that content in <en> tags is kept together """
@@ -119,9 +158,15 @@ def token_split(sent, total_tokens):
 	if sent != "":
 		""" Normalize different kinds of potential apostrophe/single quotation and dash/hyphen characters """
 		sent_apos = (re.sub(r"[’‘`]", "'", sent))
-		sentence = (re.sub(r"[‑—–]", "-", sent_apos))
+		sent_quot = (re.sub(r"[“”]", '"', sent_apos))
+		sentence = (re.sub(r"[‑—–]", "-", sent_quot))
 		sentence = en_tag_check(sentence)
-		token_list = list(filter(None, re.split(r"\s", sentence)))
+		token_list = list(filter(None, re.split(r"(<[^>]+?>|\s)", sentence)))
+		whitespace = re.compile(r"\s+$")
+		for i, tl in enumerate(token_list):
+			if re.match(whitespace, tl):
+				token_list[i] = ''
+		token_list = list(filter(None, token_list))
 		token_list = remove_markup(token_list)
 		for i, token in enumerate(token_list):
 			if token not in ['', ' ']:
@@ -129,7 +174,7 @@ def token_split(sent, total_tokens):
 	return(tokens)
 
 def check_token(token):
-	### Words tagged as English (<en>point</en>) should be
+	### Words tagged in CorCenCC raw data as English (<en>point</en>) should be
 	### returned with their tagging so that the postagger
 	### can tag them correctly.
 	if len(token) == 1:
@@ -310,8 +355,9 @@ def check_token(token):
 		if re.match(r"^[\$€£¥][0-9]+([,\.]?[0-9]+)?[p¢ckKmM]?$", token):
 			return [token]
 		### 6pm 7yh 9a.m.
-		if re.match(r"^([012]?[0-9][:\.]?)?[012345][0-9](yh|am|yb|pm|y\.h\.|a\.m\.|y\.b\.|p\.m\.|ybore|yrhwyr|yp)?$", token):
-			return [token]
+		if re.match(r"^((?:[012]?[0-9][:\.]?)?[012345][0-9])(yh|am|yb|pm|y\.h\.|a\.m\.|y\.b\.|p\.m\.|ybore|yrhwyr|yp)$", token):
+			time = re.match(r"^((?:[012]?[0-9][:\.]?)?[012345][0-9])(yh|am|yb|pm|y\.h\.|a\.m\.|y\.b\.|p\.m\.|ybore|yrhwyr|yp)?$", token)
+			return [time.group(1)] + check_token(time.group(2))
 		### 654BC
 		if re.match(r"^[123]?\d(\d\d)?(oc|cc|bc|bce|ce|ad|a\.\d\.|b\.c\.|b\.c\.e\.|o\.c\.|c\.c\.|c\.e\.)", token.lower()):
 			return [token]

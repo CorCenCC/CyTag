@@ -23,7 +23,7 @@ import os
 def load_lexicon():
 	""" Load Welsh lexical information into a dictionary, and return it """
 	lexicon = {}
-	with open("{}/../../lexicon/{}".format(os.path.dirname(os.path.abspath(__file__)), "corcencc_lexicon_2017-09-29"), encoding="utf-8") as loaded_lexicon:
+	with open("{}/../../lexicon/{}".format(os.path.dirname(os.path.abspath(__file__)), "corcencc_lexicon_2020"), encoding="utf-8") as loaded_lexicon:
 		entries = loaded_lexicon.read().splitlines()
 		for entry in entries:
 			if entry[:1] != "#":
