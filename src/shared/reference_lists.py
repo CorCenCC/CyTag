@@ -22,7 +22,7 @@ tag_categories = [["Anon", ["Anon"]],
 							"Rhadib1u", "Rhadib2u", "Rhadib3gu", "Rhadib3bu", "Rhadib1ll", "Rhadib2ll", "Rhadib3ll",
 							"Rhamedd1u", "Rhamedd2u", "Rhamedd3gu", "Rhamedd3bu", "Rhamedd1ll", "Rhamedd2ll", "Rhamedd3ll",
 							"Rhacys1u", "Rhacys2u", "Rhacys3gu", "Rhacys3bu", "Rhacys1ll", "Rhacys2ll", "Rhacys3ll",
-							"Rhagof", "Rhadangg", "Rhadangb", "Rhadangd", "Rhaperth", "Rhaatb", "Rhaamh", "Rhacil"]],
+							"Rhagof", "Rhadangg", "Rhadangb", "Rhadangd", "Rhadangll", "Rhaperth", "Rhaatb", "Rhaamh", "Rhacil"]],
 					["U", ["U", "Uneg", "Ucad", "Ugof", "Utra", "Uberf", "Ublaen"]],
 					["Gw", ["Gwest", "Gwfform", "Gwsym", "Gwacr", "Gwtalf", "Gwdig", "Gwllyth", "Gwann"]],
 					["Atd", ["Atdt", "Atdcan", "Atdchw", "Atdde", "Atdcys", "Atddyf"]],
@@ -155,6 +155,7 @@ morphological_table = [["Egu", ["E", "g", "u"]],
 						["Rhadangg", ["Rha", "dang", "g"]],
 						["Rhadangb", ["Rha", "dang", "b"]],
 						["Rhadangd", ["Rha", "dang", "d"]],
+						["Rhadangll", ["Rha", "dang", "ll"]],
 						["Rhaperth", ["Rha", "perth"]],
 						["Rhaatb", ["Rha", "atb"]],
 						["Rhaamh", ["Rha", "amh"]],
@@ -216,6 +217,8 @@ def lookup_mutation(input_token):
 	unmutated = []
 	if len(token) > 2 and  token[:2] == "ch":
 		unmutated.append(("c{}".format(token[2:]), "am"))
+		if token[:5] == "chyda":
+			unmutated.append(("g{}".format(token[2:]), "am"))
 	if len(token) > 2 and  token[:2] == "ph":
 		unmutated.append(("p{}".format(token[2:]), "am"))
 	if len(token) > 2 and  token[:2] == "th":
@@ -246,7 +249,9 @@ def lookup_mutation(input_token):
 	if len(token) > 1 and token[:1] == "r" and token[1] != "h":
 		unmutated.append(("rh{}".format(token[1:]), "sm"))
 	if len(token) > 2 and token[:2] == "dd":
-		unmutated.append(("d{}".format(token[2:]), "sm"))
+		unmutated.append((token[1:], "sm"))
+	if len(token) > 2 and token[:1] == "j":
+		unmutated.append(("ts{}".format(token[1:]), "sm"))
 	if len(token) > 2 and token[:2] == "ha":
 		unmutated.append(("a{}".format(token[2:]), "hm"))
 	if len(token) > 2 and token[:2] == "he":
@@ -261,7 +266,7 @@ def lookup_mutation(input_token):
 		unmutated.append(("w{}".format(token[2:]), "hm"))
 	if len(token) > 3 and token[:2] == "hy":
 		unmutated.append(("y{}".format(token[2:]), "hm"))
-	if len(token) > 2 and token[:1] in ["a", "e", "i", "o", "u", "w", "y"] and len(token) > 2:
+	if (len(token) > 2 and token[:1] in ["a", "e", "i", "o", "u", "w", "y", "r", "l"]) or token == "wn":
 		unmutated.append(("g{}".format(token), "sm"))
 	if input_token[0].isupper():
 		capitals = []
@@ -279,3 +284,5 @@ def tag_morphology(tag):
 	else:
 		morphology = [tag]
 	return morphology
+
+html_tags = {"a","abbr","acronym","address","applet","area","article","aside","audio","b","base","basefont","bdi","bdo","big","blockquote","body","br","button","canvas","caption","center","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","dir","div","dl","dt","em","embed","fieldset","figcaption","figure","font","footer","form","frame","frameset","head","header","hgroup","h1","h2","h3","h4","h5","h6","h7","hr","html","i","iframe","img","input","ins","kbd","keygen","label","legend","li","link","main","map","mark","menu","menuitem","meta","meter","nav","noframes","noscript","object","ol","optgroup","option","output","p","param","picture","pre","progress","q","rp","rt","ruby","s","samp","script","section","select","small","source","span","strike","strong","style","sub","summary","sup","svg","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","tt","u","ul","var","video","wbr","br/", "hr/"}
