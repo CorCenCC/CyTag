@@ -64,7 +64,7 @@ with open("{}/../cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.
 	trade_names = set(GeirEraill.read().splitlines())
 
 stats = {"pre-cg": 
-			{"untagged": 0, "definite_tag": 0, "with_readings": 0, "single_reading": 0, "multiple_readings": 0, "without_readings": 0, "no_readings": 0, "assumed_proper": 0},
+			{"untagged": 0, "definite_tag": 0, "with_readings": 0, "non-standard": 0, "non_welsh": 0, "non_alpha": 0, "single_reading": 0, "multiple_readings": 0, "without_readings": 0, "no_readings": 0, "assumed_proper": 0},
 		 "post-cg":
 		 	{"one_reading": 0, "multiple_readings": 0, "unknown": 0, "disambiguated": 0, "unknown_gazetteer": 0, "pns_gazetteer": 0, "neutral_pns": 0, "same_tag": 0, "in_coverage": 0, "ambiguous_gazetteer": 0, "undisambiguated": 0, "still_ambiguous": 0}
 		}
@@ -134,6 +134,8 @@ def find_definite_tags(token):
 		pos = "Gw:Gwdig"
 	elif re.match(r"^\d+\.?\d+?%", token):
 		pos = "Gw:Gwdig"
+	elif re.match(r"^\d\d\d\dau%", token):
+		pos = "E:Egll"
 	elif pos == "" and token in gazetteers["acronyms"]:
 		pos = "Gw:Gwacr"
 	elif pos == "" and token.lower() in gazetteers["abbreviations"]:
@@ -211,24 +213,28 @@ def handle_empty_lookup(token):
 	reading_string = "" 
 	token_parts = token[0].lower().split("-")
 	if token[0].isalpha():
-		deaccent = unicodedata2.normalize('NFKD', token[0]).encode('ASCII', 'ignore').decode('ASCII')
+		deaccent = unicodedata2.normalize('NFKD', token[0].lower()).encode('ASCII', 'ignore').decode('ASCII')
 		if token != deaccent and deaccent != "":
 			readings = lookup_multiple_readings([deaccent])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 	if token[0].lower() in contractions_and_prefixes.keys():
 		if contractions_and_prefixes[token[0].lower()][0] == "contraction":
 			readings = lookup_multiple_readings(contractions_and_prefixes[token[0].lower()][1])	
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
 	elif token[0].lower() in contractions_and_prefixes.keys():
 		if contractions_and_prefixes[token[0].lower()][0] == "contraction":
 			readings = lookup_multiple_readings(contractions_and_prefixes[token[0].lower()][1])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
 	else:
 		if token[0].find("-") != -1 and len(set(token[0])) < 1:
 			no_spaces = "".join(token_parts)
@@ -236,7 +242,8 @@ def handle_empty_lookup(token):
 			readings = lookup_multiple_readings([no_spaces, spaces])
 			if len(readings) > 0:
 				count_readings = True
-				reading_string += format_multireading_lookup(readings, token[0], token[1])		
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
 			elif len(token_parts) == 2 and (token_parts[0] + "-") in contractions_and_prefixes:
 				readings = lookup_multiple_readings([token_parts[1]])
 				for reading in readings:
@@ -245,37 +252,50 @@ def handle_empty_lookup(token):
 					reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0].lower(), token[1], tags, "-")
 				if len(readings) > 0:
 					count_readings = True
+					stats["pre-cg"]["with_readings"] += 1
 		if token[0][-1:] == "'":
 			readings = lookup_multiple_readings(["{}f".format(token[0][:-1]), "{}r".format(token[0][:-1]), "{}l".format(token[0][:-1])])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 		if token[0][-1:] in ["a", "e"]:
 			""" Check for endings spelled with "e"/"a" instead of "au" or "ai" """
 			readings = lookup_multiple_readings(["{}au".format(token[0][:-1]), "{}ai".format(token[0][:-1]), "{}ae".format(token[0][:-1])])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 		if token[0][-1:] in ["a", "â", "e", "ê", "i", "î", "o", "ô", "u", "û", "w", "ŵ", "y", "ŷ"]:
 			readings = lookup_multiple_readings(["{}f".format(token[0])])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 		if token[0][-1:] in ["b", "c", "d", "f", "g", "h", "j", "l", "m", "n", "p", "r", "s", "t"] or token[0][-2:] in ["ch", "dd", "ff", "ng", "ll", "ph", "rh", "th"]:
 			readings = lookup_multiple_readings(["{}r".format(token[0]), "{}l".format(token[0])])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 		if token[0][-2:] in ["es"]:
 			readings = lookup_multiple_readings(["{}ais".format(token[0][:-2])])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 		if token[0][-3:] in ["est"]:
 			readings = lookup_multiple_readings(["{}aist".format(token[0][:-3])])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 		if token[0].find('e', 1, len(token[0])-1) != -1:
 			if token[0].index("e") not in [0, len(token[0])-1]:
 				split_e = token[0][1:len(token[0])-1].split("e")
@@ -286,15 +306,28 @@ def handle_empty_lookup(token):
 				if len(readings) > 0:
 					count_readings = True
 					reading_string += format_multireading_lookup(readings, token[0], token[1])
+					stats["pre-cg"]["with_readings"] += 1
+					stats["pre-cg"]["non-standard"] += 1
 		if token[0].find("'") != -1:
 			no_apos = "".join(token[0].split("'"))
 			readings = lookup_multiple_readings([no_apos])
 			if len(readings) > 0:
 				count_readings = True
 				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+		if token[0].find("nn") != -1:
+			single_n = token[0].replace("nn", "n")
+			readings = lookup_multiple_readings([single_n])
+			if len(readings) > 0:
+				count_readings = True
+				reading_string += format_multireading_lookup(readings, token[0], token[1])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non-standard"] += 1
 		if not count_readings == True:
 			if token[0].lower() in en_dict:
 				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non_welsh"] += 1
 			elif token[0][0].isupper():
 				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p g", token[0])
 				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p b", token[0])
@@ -302,9 +335,27 @@ def handle_empty_lookup(token):
 				stats["pre-cg"]["assumed_proper"] += 1
 			elif token[0].lower() in en_dict_full:
 				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["non_welsh"] += 1
 			else:
-				reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
-				stats["pre-cg"]["without_readings"] += 1
+				not_alpha = 0
+				not_welsh = 0
+				for char in token[0]:
+					if char.isalpha() and char not in {"a", "b", "c", "d", "e", "f", "g", "h", "i", "l", "m", "n", "o", "p", "r", "s", "t", "u", "w", "x", "y", "â", "ê", "î", "o", "û", "ŷ", "ẃ", "ý", "ẁ", "ỳ", "ï"}:
+						not_welsh += 1
+					if not char.isalpha() and char not in ["-", "'", '"']:
+						not_alpha += 1
+				if not_alpha > 0:
+					reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw ann", token[0].lower())
+					stats["pre-cg"]["with_readings"] += 1
+					stats["pre-cg"]["non_alpha"] += 1
+				elif not_welsh > 0:
+					reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
+					stats["pre-cg"]["with_readings"] += 1
+					stats["pre-cg"]["non_welsh"] += 1
+				else:
+					reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
+					stats["pre-cg"]["without_readings"] += 1
 	return(reading_string, count_readings)
 
 def get_reading(token_id, token):
@@ -326,11 +377,13 @@ def get_reading(token_id, token):
 		readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][4:-5], token[0][4:-5], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][4:-5])
 		stats["pre-cg"]["with_readings"] += 1
 		stats["pre-cg"]["definite_tag"] += 1
+		stats["pre-cg"]["non_welsh"] += 1
 	elif pos != "" and (pos[:pos.index(":")] == "Atd" or pos[pos.index(":")+1:] in ["Gwsym", "Gwdig", "Gwacr", "Gwtalf"]):
 		readings.append("definite")
 		readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
 		stats["pre-cg"]["with_readings"] += 1
 		stats["pre-cg"]["definite_tag"] += 1
+		stats["pre-cg"]["non_alpha"] += 1
 	else:
 		readings_string += "\"<{}>\"\n".format(token[0])
 		readings = lookup_readings(token[0])
