@@ -11,6 +11,8 @@ CyTag can either process Welsh text via standard input, or accepts the following
 	--- REQUIRED: One or more Welsh input text files (raw text).
 	--- OPTIONAL: A name to describe the corpus and its output files.
 	--- OPTIONAL: A directory in which output files will be saved.
+	--- OPTIONAL: Rebuild lexicon? (Can slow down the code - default is to rebuild, but if you know that they have not changed since last run, set this to "n".)
+	--- OPTIONAL: Rebuild gazetteers? (Can slow down the code - default is to rebuild, but if you know that they have not changed since last run, set this to "n".)
 	--- OPTIONAL: A specific component to run the pipeline to, should running the entire pipeline not be required ('seg', 'sent', 'tok', 'pos').
 	--- OPTIONAL: A format to write the pipeline's output to ('tsv', 'xml', 'vrt', 'db' or 'all')
 	or:
@@ -23,6 +25,8 @@ Developed at Cardiff University as part of the CorCenCC project (www.corcencc.or
 
 2016-2018 Steve Neale <steveneale3000@gmail.com, NealeS2@cardiff.ac.uk>, Kevin Donnelly <kevin@dotmon.com>
 
+2020 Bethan Tovey-Walsh <bytheway@linguacelta.com>
+
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or (at your option) any later version.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses>.
@@ -30,6 +34,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 import sys
 import os
+import click
 
 sys.path.insert(0, "{}/src/".format(os.path.dirname(os.path.abspath(__file__))))
 
@@ -39,10 +44,13 @@ from cy_textsegmenter import *
 from cy_sentencesplitter import *
 from cy_tokeniser import *
 from cy_postagger import *
+from shared.load_lexicon import *
+from shared.load_gazetteers import *
+
 
 #from evaluate_cytag import *
 
-def process(input_text, output_name=None, directory=None, component=None, output_format=None):
+def process(input_text, output_name=None, directory=None, component=None, output_format=None, lex_rebuild=True, gaz_rebuild=True):
 	""" Process the input text/file(s) """
 	if input_text == "" or input_text == []:
 		raise ValueError("Input text must either be: a string, or; the names of one or more raw text files")
@@ -51,6 +59,10 @@ def process(input_text, output_name=None, directory=None, component=None, output
 	elif output_format != None and output_format not in ["tsv", "xml", "all"]:
 		raise ValueError("An invalid output format ('{}') was given. Valid formats: 'tsv', 'xml', 'all'".format(output_format))
 	else:
+		if lex_rebuild == True:
+			boop = True
+		if gaz_rebuild == True:
+			boop = True
 		if [output_name, directory, component, output_format] == [None, None, None, None]:
 			output = pos_tagger(input_text)
 			print(output)
@@ -90,11 +102,14 @@ def parse_processing_arguments(arguments):
 	optional.add_argument("-d", "--dir", help="Output directory")
 	optional.add_argument("-c", "--component", help="Component to run the pipeline to ('seg', 'sent', 'tok', 'pos')")
 	optional.add_argument("-f", "--format", help="Output file format ('tsv', 'xml', 'all')")
+	optional.add_argument("-l", "--lexicon", choices=["y", "n"], help="Rebuild the lexicons (y/n). (Set to y by default. Slows down the tagger; set to n if the lexicons are unchanged since last run.)")
+	optional.add_argument("-g", "--gazetteer", choices=["y", "n"], help="Rebuild the gazetteers (y/n). (Set to y by default. Slows down the tagger; set to n if the gazetteers are unchanged since last run.)")
 	parser._action_groups.append(optional)
-	return(parser.parse_args())
+	return parser.parse_args()
 
 if __name__ == "__main__":
 	""" Process input (standard input, text as a string, or files) or evaluate CyTag """
+
 	args = sys.argv[1:]
 	if len(args) == 0 and not sys.stdin.isatty():
 		process(input_text=sys.stdin.read())
@@ -106,4 +121,8 @@ if __name__ == "__main__":
 			process(input_text=args[0])
 		else:
 			arguments = parse_processing_arguments(args)
+			if arguments.lexicon and arguments.lexicon == "y":
+				load_lexicon()
+			if arguments.gazetteer and arguments.gazetteer == "y":
+				load_gazetteers()
 			process(arguments.input, output_name=arguments.name, directory=arguments.dir, component=arguments.component, output_format=arguments.format)

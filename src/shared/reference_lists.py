@@ -1,6 +1,18 @@
 #!usr/bin/env python3
 #-*- coding: utf-8 -*-
 
+import os
+import json
+
+with open("{}/../../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
+	contractions_and_prefixes = json.load(contractionsprefixes_json)
+with open("{}/../../lexicon/lexicon_dict.json".format(os.path.dirname(os.path.abspath(__file__)))) as cy_lexicon_json:
+	cy_lexicon = json.load(cy_lexicon_json)
+with open("{}/../../cy_gazetteers/gazetteer_dict.json".format(os.path.dirname(os.path.abspath(__file__)))) as cy_gazetteers_json:
+	gazetteers = json.load(cy_gazetteers_json)
+with open("{}/../../cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
+	trade_names = set(GeirEraill.read().splitlines())
+
 """ The appropriate rich POS tags that collapse into each basic POS tag """
 tag_categories = [["Anon", ["Anon"]],
 ["E", ["Egu", "Ebu", "Egll", "Ebll", "Egbu", "Egbll", "Ep", "Epg", "Epb"]],

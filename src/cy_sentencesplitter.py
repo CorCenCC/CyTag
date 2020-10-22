@@ -26,14 +26,10 @@ You should have received a copy of the GNU General Public License along with thi
 import sys
 import os
 import re
-
+import json
+from shared.reference_lists import *
 from cy_textsegmenter import segment_text
-from shared.load_gazetteers import *
 
-
-""" Load prerequisites """
-
-gazetteers = load_gazetteers()
 
 
 """ Primary functions """

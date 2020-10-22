@@ -51,17 +51,9 @@ from cy_textsegmenter import *
 from cy_sentencesplitter import *
 from cy_tokeniser import *
 from shared.create_folders import *
-from shared.load_gazetteers import *
-from shared.load_lexicon import *
+from shared.en_lexica import *
 from shared.reference_lists import *
 
-with open("{}/../cy_gazetteers/corcencc.en_words".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEN:
-	en_dict = set(GeirEN.read().splitlines())
-with open("{}/../cy_gazetteers/corcencc.en_words_full".format(os.path.dirname(os.path.abspath(__file__)))) as GeirENmawr:
-	en_dict_full = set(GeirENmawr.read().splitlines())
-
-with open("{}/../cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
-	trade_names = set(GeirEraill.read().splitlines())
 
 stats = {"pre-cg": 
 			{"untagged": 0, "definite_tag": 0, "with_readings": 0, "non-standard": 0, "non_welsh": 0, "non_alpha": 0, "single_reading": 0, "multiple_readings": 0, "without_readings": 0, "no_readings": 0, "assumed_proper": 0},
@@ -79,13 +71,6 @@ vislcg3_location = shutil.which("vislcg3")
 
 existing_unknown_words = []
 new_unknown_words = []
-
-gazetteers = load_gazetteers()
-cy_lexicon = load_lexicon()
-
-contractions_and_prefixes = {}
-with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
-	contractions_and_prefixes = json.load(contractionsprefixes_json)
 
 """ A simple switch to use the 'check_coverage' options when tagging (i.e. guess untagged words using entries in the tag-token coverage and tag-sequence dictionaries)
 	--- NOTE: Leave this as True, unless producing tagged output for making new tag-token coverage and tag-sequence dictionaries
@@ -731,7 +716,7 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 		started = int(time.time())
 		if output_format != None:
 			print("\ncy_postagger - A part-of-speech (POS) tagger for Welsh texts\n------------------------------------------------------------\n")
-			output_setup(output_name, directory, output_format)
+			output_setup(output_name, directory, output_format, )
 			print("Producing readings...\n")
 		if isinstance(input_data, list):
 			if output["xml"] != None:
