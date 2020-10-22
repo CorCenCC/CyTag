@@ -31,19 +31,8 @@ import json
 
 from cy_textsegmenter import *
 from cy_sentencesplitter import *
-from shared.load_gazetteers import *
-from shared.load_lexicon import *
 from shared.reference_lists import *
 
-gazetteers = load_gazetteers()
-cy_lexicon = load_lexicon()
-
-contractions_and_prefixes = {}
-with open("{}/../cy_gazetteers/contractions_and_prefixes.json".format(os.path.dirname(os.path.abspath(__file__)))) as contractionsprefixes_json:
-	contractions_and_prefixes = json.load(contractionsprefixes_json) 
-
-with open("{}/../cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
-	trade_names = set(GeirEraill.read().splitlines())
 
 def check_html_tags(token):
 	if token[0] == "<" and ">" in token:

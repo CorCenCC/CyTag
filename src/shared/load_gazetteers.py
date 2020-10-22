@@ -19,8 +19,9 @@ You should have received a copy of the GNU General Public License along with thi
 
 import sys
 import os
+import json
 
-def load_gazetteers():
+def load_gaz():
 	""" Load Welsh gazetteers into a dictionary, and return it """
 	gazetteers = {}
 	for gaz in os.listdir("{}/../../cy_gazetteers".format(os.path.dirname(os.path.abspath(__file__)))):
@@ -34,4 +35,9 @@ def load_gazetteers():
 				gaz_name, gaz_ext = os.path.splitext(gaz)
 				gazetteers[gaz_ext[1:]] = terms
 				gazetteers["{}_regex".format(gaz_ext[1:])] = exclude_string
-	return(gazetteers)
+	return gazetteers
+
+def load_gazetteers():
+	gaz_dict = load_gaz()
+	with open("{}/../../cy_gazetteers/gazetteer_dict.json".format(os.path.dirname(os.path.abspath(__file__))), "w") as loaded:
+		json.dump(gaz_dict, loaded)

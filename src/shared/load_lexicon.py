@@ -19,8 +19,9 @@ You should have received a copy of the GNU General Public License along with thi
 
 import sys
 import os
+import json
 
-def load_lexicon():
+def load_cy():
 	""" Load Welsh lexical information into a dictionary, and return it """
 	lexicon = {}
 	with open("{}/../../lexicon/{}".format(os.path.dirname(os.path.abspath(__file__)), "corcencc_lexicon_2020"), encoding="utf-8") as loaded_lexicon:
@@ -32,4 +33,11 @@ def load_lexicon():
 					lexicon[entry_parts[0]] = [{"lemma": entry_parts[1], "lemma_en": entry_parts[2], "pos_basic": entry_parts[3], "pos_enriched": entry_parts[4]}]
 				else:
 					lexicon[entry_parts[0]].append({"lemma": entry_parts[1], "lemma_en": entry_parts[2], "pos_basic": entry_parts[3], "pos_enriched": entry_parts[4]})
-	return(lexicon)					
+	return lexicon
+
+def load_lexicon():
+	cy_lexicon = load_cy()
+	with open("{}/../../lexicon/lexicon_dict.json".format(os.path.dirname(os.path.abspath(__file__))), "w") as loaded:
+		json.dump(cy_lexicon, loaded)
+
+
