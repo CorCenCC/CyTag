@@ -334,7 +334,7 @@ def handle_empty_lookup(token):
 					reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "Gw ann", token[0].lower())
 					stats["pre-cg"]["with_readings"] += 1
 					stats["pre-cg"]["non_alpha"] += 1
-				elif set(token) != {'x'}:
+				elif set(token[0]) == {'x'}:
 					reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "Gw sym", token[0].lower())
 					stats["pre-cg"]["with_readings"] += 1
 					stats["pre-cg"]["non_alpha"] += 1
