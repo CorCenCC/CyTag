@@ -34,7 +34,6 @@ You should have received a copy of the GNU General Public License along with thi
 
 import sys
 import os
-import click
 
 sys.path.insert(0, "{}/src/".format(os.path.dirname(os.path.abspath(__file__))))
 
@@ -102,8 +101,8 @@ def parse_processing_arguments(arguments):
 	optional.add_argument("-d", "--dir", help="Output directory")
 	optional.add_argument("-c", "--component", help="Component to run the pipeline to ('seg', 'sent', 'tok', 'pos')")
 	optional.add_argument("-f", "--format", help="Output file format ('tsv', 'xml', 'all')")
-	optional.add_argument("-l", "--lexicon", choices=["y", "n"], help="Rebuild the lexicons (y/n). (Set to y by default. Slows down the tagger; set to n if the lexicons are unchanged since last run.)")
-	optional.add_argument("-g", "--gazetteer", choices=["y", "n"], help="Rebuild the gazetteers (y/n). (Set to y by default. Slows down the tagger; set to n if the gazetteers are unchanged since last run.)")
+	optional.add_argument("-l", "--lexicon", choices=["y", "n"], help="Rebuild the lexicons (y/n). Slows down the tagger; n by default, set to y only if lexicon is changed since last run. Takes effect on your next run, so you will need to rerun your command after a rebuild.)")
+	optional.add_argument("-g", "--gazetteer", choices=["y", "n"], help="Rebuild the gazetteers (y/n). Slows down the tagger; n by default, set to y only if lexicon is changed since last run. Takes effect on your next run, so you will need to rerun your command after a rebuild.)")
 	parser._action_groups.append(optional)
 	return parser.parse_args()
 

@@ -41,6 +41,8 @@ def split_sentences(input_text):
 	output = []
 	input_text = re.sub(r'<en( gair ?= ?"[^"]+")?> ?', "<en>", input_text)
 	input_text = re.sub(" </en>", "</en>", input_text)
+	input_text = re.sub(r'<anon> ?', "<anon>", input_text)
+	input_text = re.sub(" </anon>", "</anon>", input_text)
 	if input_text.find("<en>") != -1 or input_text.find("</en>") != -1:
 		en_tagged = re.split(r"(<en>[^<]+</en>)", input_text)
 		en_tagged = list(filter(None, en_tagged))

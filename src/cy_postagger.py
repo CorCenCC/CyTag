@@ -91,14 +91,14 @@ def find_definite_tags(token):
 		--- acronynms or abbreviations (from gazetteers)
 	"""
 	pos = ""
-	match_speaker_tag = re.match(r"^<[sS](\d+|\?)>$", token)
+	match_speaker_tag = re.match(r"^\[\*S(\d+|\?)\*\]$", token)
 	if match_speaker_tag is not None:
 		pos = "Anon:Anon"
-	elif token.startswith("<anon>"):
+	elif token.startswith("[*anon>"):
 		pos = "Anon:Anon"
 	elif token in ["enwb", "enwg", "enwbg"]:
 		pos = "Anon:Anon"
-	elif token[:3] == "<en":
+	elif token.startswith("[*en"):
 		pos = "Gw:Gwest"
 	elif re.match(r"[.,:;\"\'!?\-\—<>{}\[\]()]", token):
 		if re.match(r"[.!?]", token):
@@ -109,7 +109,7 @@ def find_definite_tags(token):
 			pos = "Atd:Atdchw"
 		if re.match(r"[>}\])]", token):
 			pos = "Atd:Atdde"
-		if token is "-":
+		if token == "-":
 			pos = "Atd:Atdcys"
 		if re.match(r"^[\'\"]+$", token):
 			pos = "Atd:Atdyf"	
@@ -326,12 +326,16 @@ def handle_empty_lookup(token):
 				not_alpha = 0
 				not_welsh = 0
 				for char in token[0]:
-					if char.isalpha() and char not in {"a", "b", "c", "d", "e", "f", "g", "h", "i", "l", "m", "n", "o", "p", "r", "s", "t", "u", "w", "x", "y", "â", "ê", "î", "o", "û", "ŷ", "ẃ", "ý", "ẁ", "ỳ", "ï"}:
+					if char.isalpha() and char not in {"a", "b", "c", "d", "e", "f", "g", "h", "i", "l", "m", "n", "o", "p", "r", "s", "t", "u", "w", "x", "y", "â", "ê", "î", "ô", "û", "ŷ", "ẃ", "ý", "ẁ", "ỳ", "ï"}:
 						not_welsh += 1
 					if not char.isalpha() and char not in ["-", "'", '"']:
 						not_alpha += 1
 				if not_alpha > 0:
-					reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw ann", token[0].lower())
+					reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "Gw ann", token[0].lower())
+					stats["pre-cg"]["with_readings"] += 1
+					stats["pre-cg"]["non_alpha"] += 1
+				elif set(token) != {'x'}:
+					reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "Gw sym", token[0].lower())
 					stats["pre-cg"]["with_readings"] += 1
 					stats["pre-cg"]["non_alpha"] += 1
 				elif not_welsh > 0:
@@ -353,13 +357,18 @@ def get_reading(token_id, token):
 		readings.append("definite")
 		stats["pre-cg"]["with_readings"] += 1
 		stats["pre-cg"]["definite_tag"] += 1
-		if token[0][0:6] == "<anon>":
-			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][6:-7], token[0][6:-7], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][6:-7])
+		if token[0][0:7] == "[*anon>":
+			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][7:-8], token[0][7:-8], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][7:-8])
+		elif token[0][0:3] == "[*S" and token[0][-2:] == "*]":
+			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][2:-2], token[0][2:-2], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][2:-2])
 		else:
 			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
 	elif pos == "Gw:Gwest":
 		readings.append("definite")
-		readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][4:-5], token[0][4:-5], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][4:-5])
+		if token[0][0:5] == "[*en>":
+			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][5:-6], token[0][5:-6], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][5:-6])
+		else:
+			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][4:-5], token[0][4:-5], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][4:-5])
 		stats["pre-cg"]["with_readings"] += 1
 		stats["pre-cg"]["definite_tag"] += 1
 		stats["pre-cg"]["non_welsh"] += 1
@@ -766,7 +775,8 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 			else:
 				if output["readingsPostCG"] != None:
 					print(cg_output.strip(), file=output["readingsPostCG"])
-				mapping_bar = None if output_format == None else Bar("Mapping CG output tokens to CyTag output formats", max=total_tokens)
+				#mapping_bar = None if output_format == None else Bar("Mapping CG output tokens to CyTag output formats", max=total_tokens)
+				mapping_bar = None
 				cytag_output = map_cg(cg_output.strip(), mapping_bar)
 				if output["unknown_words"] != None:
 					save_unknown_words()
