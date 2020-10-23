@@ -321,7 +321,8 @@ def check_token(token):
 					for sp in split:
 						result = result + check_token(sp)	
 					return result	
-			return ["'"] + check_token(token[:-1])
+			return check_token(token[:-1]) + ["'"
+			]
 		else:
 			apos = "'"
 			split = list(filter(None, re.split(r"(')", token)))
