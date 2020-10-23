@@ -179,6 +179,7 @@ def token_split(sent, total_tokens):
 		sent_apos = (re.sub(r"[’‘`]", "'", sent))
 		sent_quot = (re.sub(r"[“”]", '"', sent_apos))
 		sentence = (re.sub(r"[‑—–]", "-", sent_quot))
+		sentence = (re.sub(r"<hyperlink ?/>", "<anon>enw_gwefan</anon>", sentence))
 		sentence = en_tag_check(sentence)
 		sentence = anon_tag_check(sentence)
 		token_list = list(filter(None, re.split(r"(<[^>\]]+?>|\s)", sentence)))
