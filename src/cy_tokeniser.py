@@ -97,7 +97,12 @@ def remove_markup(tokens):
 			tokens[i] = (re.sub(r"<ym>", "ymm", tok))
 		final_tokens = []
 		for token in tokens:
-			tok_split = re.split(r"(<[sS](?:\d+|\?)>)", token)
+			tok_split = re.split(r"(<[sS](?:\d+|\?)>)$", token)
+			tok_split = list(filter(None, tok_split))
+			for n, ts in enumerate(tok_split):
+				speaker_code = re.match(r"<[Ss](\d+|\?)>", ts)
+				if speaker_code:
+					tok_split[n] = "[*S" + speaker_code.group(1) + "*]"
 			final_tokens += list(filter(None, tok_split))
 		return final_tokens
 	return []
@@ -114,31 +119,56 @@ def en_tag_check(sentence):
 			sentence = (re.sub(r'(</?en>)', "", sentence))
 		else:
 			tag_close = en_split.index("</en>")
-			tag_open = tag_close - 2
+			tag_open = en_split.index("<en>")
 			tag_contents = en_split[tag_open+1]
 			tag_items = tag_contents.split(" ")
 			tag_items = list(filter(None, tag_items))
 			all_tagged = []
 			for item in tag_items:
-				split_punct = re.split(r"(\W+)", item)
+				split_punct = re.split(r'([,.;://])', item)
 				split_punct = list(filter(None, split_punct))
-				if len(split_punct) == 1:
-					individually_tagged = "<en>" + item + "</en>"
-					all_tagged.append(individually_tagged)
-				else:
-					for x in split_punct:
-						if x.isalpha():
-							individually_tagged = "<en>" + x + "</en>"
-							all_tagged.append(individually_tagged)
-						else:
-							all_tagged.append(x)
+				for split_item in split_punct:
+					if split_item.isalpha():
+						individually_tagged = "[*en>" + split_item + "</en*]"
+						all_tagged.append(individually_tagged)
+					else:
+						all_tagged.append(split_item)
 			sentence = " ".join(all_tagged)
 			if tag_close != len(en_split)-1:
 				if "<en>" in en_split[tag_close+1:]:
 					post_tags = en_tag_check("".join(en_split[tag_close+1:]))
 				else:
-					post_tags = "".join(en_split[tag_close+1:])
-				sentence += post_tags	
+					post_tags = " ".join(en_split[tag_close+1:])
+				sentence += post_tags
+	return sentence
+
+def anon_tag_check(sentence):
+	if sentence.find("<anon") != -1:
+		split_tags = re.split(r'(</?anon>)', sentence)
+		anon_split = list(filter(None, split_tags))
+		if len(anon_split) < 3:
+			sentence = (re.sub(r"</?anon>", "", sentence))
+		elif sentence.count("<anon>") != sentence.count("</anon>") and len(anon_split) != 3 and (anon_split[0] not in ["<anon>", "</anon>"] or anon_split[0] not in ["<anon>", "</anon>"]):
+			sentence = (re.sub(r'(</?anon>)', "", sentence))
+		else:
+			if anon_split[-1] == "<anon>":
+				anon_split[-1] = "</anon>"
+			tag_close = anon_split.index("</anon>")
+			tag_open = anon_split.index("<anon>")
+			tag_contents = anon_split[tag_open+1]
+			tag_items = tag_contents.replace(" ", "_")
+			#tag_items = list(filter(None, tag_items))
+			anon_pre = ""
+			if tag_open != 0:
+				anon_pre = " ".join(anon_split[:tag_open])
+			retagged = "[*anon>" + tag_items + "</anon*]"
+			anon_post = ""
+			if tag_close != len(anon_split)-1:
+				if "<anon>" in anon_split[tag_close+1:]:
+					anon_post = anon_tag_check(anon_split[tag_close+1:])
+				else:
+					anon_post = "".join(anon_split[tag_close+1:])
+			sentence = anon_pre + retagged + anon_post
 	return sentence
 
 def token_split(sent, total_tokens):
@@ -150,7 +180,8 @@ def token_split(sent, total_tokens):
 		sent_quot = (re.sub(r"[“”]", '"', sent_apos))
 		sentence = (re.sub(r"[‑—–]", "-", sent_quot))
 		sentence = en_tag_check(sentence)
-		token_list = list(filter(None, re.split(r"(<[^>]+?>|\s)", sentence)))
+		sentence = anon_tag_check(sentence)
+		token_list = list(filter(None, re.split(r"(<[^>\]]+?>|\s)", sentence)))
 		whitespace = re.compile(r"\s+$")
 		for i, tl in enumerate(token_list):
 			if re.match(whitespace, tl):
@@ -168,20 +199,20 @@ def check_token(token):
 	### can tag them correctly.
 	if len(token) == 1:
 		return [token]
-	match_english = re.match(r"^(<en( gair=\"[a-zA-Z]+\")?>([\w'\-]+)</en>)(.*)$", token)
+	match_english = re.match(r"^(\[\*en( gair=\"[a-zA-Z]+\")?>([\w'\-]+)</en\*\])(.*)$", token)
 	if match_english is not None:
-		no_gair = (re.sub(r"<en gair=\"[a-zA-Z]+\" ?>", "<en>", match_english.group(1)))
+		no_gair = (re.sub(r"\[\*en gair=\"[a-zA-Z]+\" ?>", "[*en>", match_english.group(1)))
 		if match_english.group(4) != "":
 			return [no_gair] + check_token(match_english.group(4))
 		else:
 			return [no_gair]
-	match_anon = re.match(r"^(<anon>[\w'\-]+</anon>)(.*)$", token)
+	match_anon = re.match(r"^(\[\*anon>[\w'\-\d+]+</anon\*\])(.*)$", token)
 	if match_anon is not None:
 		if match_anon.group(2) != "":
 			return [match_anon.group(1)] + check_token(match_anon.group(2))
 		else:
 			return [match_anon.group(1)]
-	match_speaker_tag = re.match(r"^<[sS](\d+|\?)>$", token)
+	match_speaker_tag = re.match(r"^\[\*[sS](\d+|\?)\*\]$", token)
 	if match_speaker_tag is not None:
 		return [token]
 	if token in ["<=>", "</=>", "<saib>", "<aneglur>", "<aneglur?>"]:
@@ -404,7 +435,6 @@ def tokeniser(input_data):
 
 if __name__ == "__main__":
 	""" Split the provided input into tokens (text as a string, or files) """
-	print("Tokeniser...\n")
 	args = sys.argv[1:]
 	if len(args) == 1 and os.path.isfile(args[0]) != True:
 		tokeniser(args[0])
