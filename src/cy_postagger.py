@@ -545,6 +545,7 @@ def process_single_reading(token_id, token, reading):
 	for quoted_lemma in re.findall(r'\"([^{]+?)\" ', reading):
 		reading = reading.replace(quoted_lemma, quoted_lemma.replace(" ", "_"))
 	info = re.split(r"\s+", reading.strip())
+	print("Info", info)
 	position, lemma = info[1][1:-1], info[0][1:-1].replace("_", " ")
 	if lemma == "":
 		lemma = token
@@ -747,6 +748,7 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 								sentence_element.attrib["id"] = str(total_sentences+1)
 							total_sentences += 1
 							tokens = tokenise(sentence, total_sentences, total_tokens)
+							print("Tokens:", tokens)
 							readings += sentence_readings(tokens, total_tokens)
 							total_tokens += len(tokens.splitlines())
 							if output["xml"] != None:
