@@ -33,7 +33,7 @@
 #  You can't combine conditions applying to adj -1 position OR adj 1 position.
 #  Substitute lines have to be in order of greatest number of tags in the match section, otherwise rules will fire on some tags, and change the tags so that the larger match never matches.  For instance: sv infin pv.
 
-DELIMITERS = "<.>" "<!>" "<?>" "<…>" "<:>" "<;>";
+DELIMITERS = "<~EOS~>" "<.>" "<!>" "<?>" "<…>" "<:>" "<;>";
 
 LIST initLV = ("a.*"ri) ("e.*"ri) ("i.*"ri) ("o.*"ri) ("u.*"ri) ("w.*"ri) ("ŵ.*"ri) ("y.*"ri) ("ŷ.*"ri);  # lemma begins with a vowel
 LIST initSV = ("<a.*>"ri) ("<e.*>"ri) ("<i.*>"ri) ("<o.*>"ri) ("<u.*>"ri) ("<w.*>"ri) ("<ŵ.*>"ri) ("<y.*>"ri) ("<ŷ.*>"ri);  # surface form begins with a vowel
@@ -47,20 +47,13 @@ SET inflected = (B) - (e);  # ie the set of all verbs, minus the set of all infi
 SET non_imper = (B) - (gorch);
 LIST preposition = Ar;
 LIST determiner = Ban;
-## Prepositions - Steve's set
 SET preppron = (Ar) - (sym);
 LIST pronoun = (Rha);
 LIST adjective = Ans;
 LIST adverb = Adf;
 LIST conjunction = Cys;
 LIST concessive = "oh" "well" "wel";
-#LIST exclamation = im;
 LIST interrogative = gof;
-#LIST phrase = h;
-#LIST placename = pn;
-
-LIST preverbal = "<just>" "<actually>" "<still>" "<even>" "<like>" "<already>" "<first>";
-LIST auxiliary = "be" "have" "do" "can";
 
 LIST initvowel = "a.*"ri "e.*"ri "i.*"ri "o.*"ri "u.*"ri "w.*"ri "y.*"ri;
 LIST amvinf = (B e am);
@@ -73,11 +66,14 @@ LIST amnoun = (E am);
 LIST nmnoun = (E nm);
 LIST smnoun = (E sm);
 LIST possessive = ("ei" :her:) ("ei" :his:);
-LIST modal = "licio" "gobeithio" "gallu";
+LIST modal = "licio" "gobeithio" "gallu" "medru";
 LIST countable = "munud" "ceiniog";
 LIST quantifier = "ofnadwy" "andros" "tipyn" "lot";
 
 LIST initsm = ("b.*"ri) ("c.*"ri) ("d.*"ri) ("g.*"ri) ("ll.*"ri) ("m.*"ri) ("p.*"ri) ("rh.*"ri) ("t.*"ri);  # initial consonants that are soft mutateable
+LIST initsm = ("b.*"ri) ("c.*"ri) ("d.*"ri) ("g.*"ri) ("ll.*"ri) ("m.*"ri) ("p.*"ri) ("rh.*"ri) ("t.*"ri);  # initial consonants that are soft mutateable
+LIST initsm = ("b.*"ri) ("c.*"ri) ("d.*"ri) ("g.*"ri) ("ll.*"ri) ("m.*"ri) ("p.*"ri) ("rh.*"ri) ("t.*"ri);  # initial consonants that are soft mutateable
+
 
 LIST smtrigger = ("am" Ar) ("ar" Ar) ("at" Ar) ("dacw" Adf) ("dau" Rhi) ("dwy" Rhi fol) ("dy" Rha dib) ("dyma" Adv) ("dyna" Adv) ("ei" Rha dib g) ("fe" U cad) ("gan" Ar) ("go" Adf) ("heb" Ar) ("hyd" Ar) ("i" Ar) ("mi" U cad) ("neu" Cys) ("o" Ar) ("pa" Adf) ("pan" Cys) ("pur" Adf) ("rhy" Adf) ("rhyw" preq) ("tan" Ar) ("tros" Ar) ("trwy" Ar) ("wrth" Ar);
 LIST amtrigger = ("a" Cys) ("â" Ar) ("ei" Rha dib b) ("gyda" Ar) ("tua" Ar);
@@ -96,7 +92,7 @@ LIST mutN = (nm);  # Note: there have to be spaces on either side of the equals 
 LIST mutA = (am);
 
 SECTION
-
+SELECT ("<~EOS~>" Atd);
 
 # Global rules
 
