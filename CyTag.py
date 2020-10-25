@@ -49,7 +49,7 @@ from shared.load_gazetteers import *
 
 #from evaluate_cytag import *
 
-def process(input_text, output_name=None, directory=None, component=None, output_format=None, lex_rebuild=True, gaz_rebuild=True):
+def process(input_text, output_name=None, directory=None, component=None, output_format=None, lex_rebuild="n", gaz_rebuild="n"):
 	""" Process the input text/file(s) """
 	if input_text == "" or input_text == []:
 		raise ValueError("Input text must either be: a string, or; the names of one or more raw text files")
@@ -58,10 +58,6 @@ def process(input_text, output_name=None, directory=None, component=None, output
 	elif output_format != None and output_format not in ["tsv", "xml", "all"]:
 		raise ValueError("An invalid output format ('{}') was given. Valid formats: 'tsv', 'xml', 'all'".format(output_format))
 	else:
-		if lex_rebuild == True:
-			boop = True
-		if gaz_rebuild == True:
-			boop = True
 		if [output_name, directory, component, output_format] == [None, None, None, None]:
 			output = pos_tagger(input_text)
 			print(output)
@@ -116,12 +112,22 @@ if __name__ == "__main__":
 		if args[0] == "evaluate":
 			arguments = parse_evaluation_arguments(args)
 			#evaluate(arguments.gold, arguments.cytag, soft_evaluation=arguments.soft)
-		elif len(args) == 1 and os.path.isfile(args[0]) != True and args[0].startswith("-") != True:
-			process(input_text=args[0])
 		else:
-			arguments = parse_processing_arguments(args)
-			if arguments.lexicon and arguments.lexicon == "y":
-				load_lexicon()
-			if arguments.gazetteer and arguments.gazetteer == "y":
-				load_gazetteers()
-			process(arguments.input, output_name=arguments.name, directory=arguments.dir, component=arguments.component, output_format=arguments.format)
+			if len(args) == 1 and os.path.isfile(args[0]) != True and os.path.isdir(args[0]) != True and args[0].startswith("-") != True:
+				process(input_text=args[0])
+			else:
+				arguments = parse_processing_arguments(args)
+				if arguments.lexicon and arguments.lexicon == "y":
+					load_lexicon()
+				if arguments.gazetteer and arguments.gazetteer == "y":
+					load_gazetteers()
+				if os.path.isdir(arguments.input[0]) and len(arguments.input) == 1:
+					names = next(os.walk(arguments.input[0]))[2]
+					filepaths = []
+					for fn in names:
+						fp = os.path.join(arguments.input[0], fn)
+						filepaths.append(fp)
+					filenames = filepaths
+				else:
+					filenames = arguments.input
+				process(filenames, output_name=arguments.name, directory=arguments.dir, component=arguments.component, output_format=arguments.format)

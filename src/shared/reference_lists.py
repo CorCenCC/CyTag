@@ -13,6 +13,8 @@ with open("{}/../../cy_gazetteers/gazetteer_dict.json".format(os.path.dirname(os
 with open("{}/../../cy_gazetteers/corcencc.other_proper".format(os.path.dirname(os.path.abspath(__file__)))) as GeirEraill:
 	trade_names = set(GeirEraill.read().splitlines())
 
+# codes used by transcribers to document non-lexical features of speech
+transcriber_codes = ["<saib>", "<=>", "</=>", "</==>", "<aneglur>", "< aneglur>", "<aneglur?>", "< aneglur?>", "<anelgur>", "<saib>", "<->", "<anadlu>", "<clecian gwefusau>", "<clirio gwddf>", "<cnoi>", "<cusanu>", "<chwerthin>", "<chwibanu>", "<chwyrnu>", "<chwythu allan yn sydyn>", "<chwythu trwyn>", "<dyheu>", "<dylyfu gên>", "<dylyfu gen>", "<ebychu>", "<giglan>", "<griddfan>", "<gwichian>", "<hisian>", "<hymian>", "<llefain>", "<ocheneidio>", "<ochneidio>", "<ochenaid>" "<pesychu>", "<peswch>", "<sgrechian>", "<slochian>", "<sniffian>", "<swnian>", "<tagu>", "<tisian>", "<torri gwynt>", "<traflyncu>", "<wfftio>", "<canu>", "<ailadrodd>", "<anadlu allan yn drwm>", "<anadlu allan yn sydyn>", "<anadlu allan>", "<anadlu mewn>", "<lleferydd di-gymraeg>", "</saib>"]
 """ The appropriate rich POS tags that collapse into each basic POS tag """
 tag_categories = [["Anon", ["Anon"]],
 ["E", ["Egu", "Ebu", "Egll", "Ebll", "Egbu", "Egbll", "Ep", "Epg", "Epb"]],

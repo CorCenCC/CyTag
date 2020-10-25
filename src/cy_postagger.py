@@ -91,13 +91,15 @@ def find_definite_tags(token):
 		--- acronynms or abbreviations (from gazetteers)
 	"""
 	pos = ""
-	match_speaker_tag = re.match(r"^\[\*S(\d+|\?)\*\]$", token)
+	match_speaker_tag = re.match(r"^\[\*S(\d|\?)+\*\]$", token)
 	if match_speaker_tag is not None:
 		pos = "Anon:Anon"
 	elif token.startswith("[*anon>"):
 		pos = "Anon:Anon"
-	elif token in ["enwb", "enwg", "enwbg"]:
+	elif token.startswith("enwb") or token.startswith("enwg") or token.startswith("enwgb") or  token.startswith("enwbg"):
 		pos = "Anon:Anon"
+	elif token.startswith("[~") or token.endswith("~]"):
+		pos = "Gw:Gwann"
 	elif token.startswith("[*en"):
 		pos = "Gw:Gwest"
 	elif re.match(r"[.,:;\"\'!?\-\—<>{}\[\]()]", token):
@@ -120,6 +122,8 @@ def find_definite_tags(token):
 	elif re.match(r"^\d+\.?\d+?%", token):
 		pos = "Gw:Gwdig"
 	elif re.match(r"^\d\d\d\dau%", token):
+		pos = "E:Egll"
+	elif re.match(r"^\d0au%", token):
 		pos = "E:Egll"
 	elif pos == "" and token in gazetteers["acronyms"]:
 		pos = "Gw:Gwacr"
@@ -313,15 +317,6 @@ def handle_empty_lookup(token):
 				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
 				stats["pre-cg"]["with_readings"] += 1
 				stats["pre-cg"]["non_welsh"] += 1
-			elif token[0][0].isupper():
-				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p g", token[0])
-				reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p b", token[0])
-				stats["pre-cg"]["with_readings"] += 1
-				stats["pre-cg"]["assumed_proper"] += 1
-			elif token[0].lower() in en_dict_full:
-				reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
-				stats["pre-cg"]["with_readings"] += 1
-				stats["pre-cg"]["non_welsh"] += 1
 			else:
 				not_alpha = 0
 				not_welsh = 0
@@ -338,71 +333,106 @@ def handle_empty_lookup(token):
 					reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "Gw sym", token[0].lower())
 					stats["pre-cg"]["with_readings"] += 1
 					stats["pre-cg"]["non_alpha"] += 1
-				elif not_welsh > 0:
-					reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
-					stats["pre-cg"]["with_readings"] += 1
-					stats["pre-cg"]["non_welsh"] += 1
 				else:
-					reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
-					stats["pre-cg"]["without_readings"] += 1
+					if token[0].isupper():
+						reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "Gw acr", token[0])
+						stats["pre-cg"]["with_readings"] += 1
+					elif token[0].lower() in en_dict_full:
+						reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
+						stats["pre-cg"]["with_readings"] += 1
+						stats["pre-cg"]["non_welsh"] += 1
+					elif not_welsh > 0:
+						reading_string += "\t\"{}\" {{{}}} [en] {} :{}:\n".format(token[0], token[1], "Gw est", token[0].lower())
+						stats["pre-cg"]["with_readings"] += 1
+						stats["pre-cg"]["non_welsh"] += 1
+					else:
+						reading_string += "\t\"{}\" {{{}}} {}\n".format(token[0], token[1], "unk")
+						stats["pre-cg"]["without_readings"] += 1
+					if token[0][0].isupper():
+						reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p", token[0])
+						reading_string += "\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[1], "E p b", token[0])
+						stats["pre-cg"]["assumed_proper"] += 1
 	return(reading_string, count_readings)
 
 def get_reading(token_id, token):
 	""" Get CG-formatted readings for a given token """
 	readings_string = ""
 	readings = []
-	pos = find_definite_tags(token[0])
-	""" token[0] = token; token[1] = sentence number, token count (e.g. 3,12) """
-	if pos == "Anon:Anon":
+	if token[0] in "\\":
 		readings.append("definite")
 		stats["pre-cg"]["with_readings"] += 1
 		stats["pre-cg"]["definite_tag"] += 1
-		if token[0][0:7] == "[*anon>":
-			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][7:-8], token[0][7:-8], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][7:-8])
-		elif token[0][0:3] == "[*S" and token[0][-2:] == "*]":
-			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][2:-2], token[0][2:-2], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][2:-2])
-		else:
-			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
-	elif pos == "Gw:Gwest":
-		readings.append("definite")
-		if token[0][0:5] == "[*en>":
-			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][5:-6], token[0][5:-6], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][5:-6])
-		else:
-			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][4:-5], token[0][4:-5], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][4:-5])
-		stats["pre-cg"]["with_readings"] += 1
-		stats["pre-cg"]["definite_tag"] += 1
-		stats["pre-cg"]["non_welsh"] += 1
-	elif pos != "" and (pos[:pos.index(":")] == "Atd" or pos[pos.index(":")+1:] in ["Gwsym", "Gwdig", "Gwacr", "Gwtalf"]):
-		readings.append("definite")
-		readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
-		stats["pre-cg"]["with_readings"] += 1
-		stats["pre-cg"]["definite_tag"] += 1
-		stats["pre-cg"]["non_alpha"] += 1
+		readings_string = "\"<\\{}>\"\n\t\"\\{}\" {{{}}} [cy] {} :backslash:\n".format(token[0], token[0], token[1], "Atdcys")
 	else:
-		readings_string += "\"<{}>\"\n".format(token[0])
-		readings = lookup_readings(token[0])
-		if len(readings) == 0:
-			empty_lookup, count_readings = handle_empty_lookup(token)
-			if empty_lookup != "":
-				readings_string += empty_lookup
-				if count_readings == True:
-					readings.append(["empty" for x in empty_lookup.splitlines() if x != ""])
-		else:
-			to_remove = []
-			for reading_id, reading in enumerate(readings):
-				if reading_id > 0 and (reading[0].lower() == readings[reading_id-1][0].lower()) and (reading[1] == readings[reading_id-1][1]) and (reading[2] == readings[reading_id-1][2]) and (reading[3] != readings[reading_id-1][3]):
-					readings[reading_id-1][3].append(reading[3][0])
-					to_remove.append(reading_id)
-			to_remove.reverse()
-			if len(to_remove) > 0:
-				for index in to_remove:
-					del readings[index]
-			for reading in readings:
-				en_lemmas = format_en_lemmas(reading[3])
-				tags = " ".join(reading[1][0])
-				mutation_desc = " + {}".format(reading[4]) if reading[4] != "" else ""
-				readings_string += "\t\"{}\" {{{}}} [cy] {} {}{}\n".format(reading[2], token[1], tags, en_lemmas, mutation_desc)
+		pos = find_definite_tags(token[0])
+		""" token[0] = token; token[1] = sentence number, token count (e.g. 3,12) """
+		if pos == "Anon:Anon":
+			readings.append("definite")
 			stats["pre-cg"]["with_readings"] += 1
+			stats["pre-cg"]["definite_tag"] += 1
+			if token[0][0:7] == "[*anon>":
+				readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][7:-8], token[0][7:-8], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][7:-8])
+			elif token[0][0:3] == "[*S" and token[0][-2:] == "*]":
+				readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][2:-2], token[0][2:-2], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][2:-2])
+			else:
+				readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
+		elif pos == "Gw:Gwest":
+			readings.append("definite")
+			if token[0][0:5] == "[*en>":
+				readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][5:-6], token[0][5:-6], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][5:-6])
+			else:
+				readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0][4:-5], token[0][4:-5], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0][4:-5])
+			stats["pre-cg"]["with_readings"] += 1
+			stats["pre-cg"]["definite_tag"] += 1
+			stats["pre-cg"]["non_welsh"] += 1
+		elif pos == "Gw:Gwann":
+			token[0] = token[0].replace("~", "")
+			if token[0] in ["[", "]"]:
+				if token[0] == "[":
+					pos = "Atd:Atdchw"
+				elif token[0] == "]":
+					pos = "Atd:Atdde"
+				readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["definite_tag"] += 1
+				stats["pre-cg"]["non_alpha"] += 1
+			else:
+				readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
+				stats["pre-cg"]["with_readings"] += 1
+				stats["pre-cg"]["definite_tag"] += 1
+				stats["pre-cg"]["non_alpha"] += 1		
+		elif pos != "" and (pos[:pos.index(":")] == "Atd" or pos[pos.index(":")+1:] in ["Gwsym", "Gwdig", "Gwacr", "Gwtalf"]):
+			readings.append("definite")
+			readings_string = "\"<{}>\"\n\t\"{}\" {{{}}} [cy] {} :{}:\n".format(token[0], token[0], token[1], " ".join(tag_morphology(pos[pos.index(":")+1:])), token[0])
+			stats["pre-cg"]["with_readings"] += 1
+			stats["pre-cg"]["definite_tag"] += 1
+			stats["pre-cg"]["non_alpha"] += 1
+		else:
+			token[0] = token[0].replace(" ", "_")
+			readings_string += "\"<{}>\"\n".format(token[0])
+			readings = lookup_readings(token[0])
+			if len(readings) == 0:
+				empty_lookup, count_readings = handle_empty_lookup(token)
+				if empty_lookup != "":
+					readings_string += empty_lookup
+					if count_readings == True:
+						readings.append(["empty" for x in empty_lookup.splitlines() if x != ""])
+			else:
+				to_remove = []
+				for reading_id, reading in enumerate(readings):
+					if reading_id > 0 and (reading[0].lower() == readings[reading_id-1][0].lower()) and (reading[1] == readings[reading_id-1][1]) and (reading[2] == readings[reading_id-1][2]) and (reading[3] != readings[reading_id-1][3]):
+						readings[reading_id-1][3].append(reading[3][0])
+						to_remove.append(reading_id)
+				to_remove.reverse()
+				if len(to_remove) > 0:
+					for index in to_remove:
+						del readings[index]
+				for reading in readings:
+					en_lemmas = format_en_lemmas(reading[3])
+					tags = " ".join(reading[1][0])
+					mutation_desc = " + {}".format(reading[4]) if reading[4] != "" else ""
+					readings_string += "\t\"{}\" {{{}}} [cy] {} {}{}\n".format(reading[2], token[1], tags, en_lemmas, mutation_desc)
+				stats["pre-cg"]["with_readings"] += 1
 	if len(readings) == 1:
 		stats["pre-cg"]["single_reading"] += 1
 	if len(readings) > 1:
@@ -410,7 +440,7 @@ def get_reading(token_id, token):
 	if len(readings) == 0:
 		stats["pre-cg"]["no_readings"] += 1
 	pre_cg_reading_counts[token_id] = len(readings)
-	return(readings_string)
+	return readings_string
 
 def check_gazetteers(token):
 	""" Check whether a given token is present in the CyTag gazetteers """
@@ -430,7 +460,6 @@ def check_gazetteers(token):
 		tags.append("Ep")
 	else:
 		unmutated_tokens = lookup_mutation(token)
-
 		if len(unmutated_tokens) != 0:
 			for unmut_tok in unmutated_tokens:
 				unmut_tok = unmut_tok[0][0].upper() + unmut_tok[0][1:].lower()
@@ -545,7 +574,6 @@ def process_single_reading(token_id, token, reading):
 	for quoted_lemma in re.findall(r'\"([^{]+?)\" ', reading):
 		reading = reading.replace(quoted_lemma, quoted_lemma.replace(" ", "_"))
 	info = re.split(r"\s+", reading.strip())
-	print("Info", info)
 	position, lemma = info[1][1:-1], info[0][1:-1].replace("_", " ")
 	if lemma == "":
 		lemma = token
@@ -560,6 +588,9 @@ def process_single_reading(token_id, token, reading):
 		pos_tag = " ".join(info[3:])
 		rich_tag = pos_tag.replace(" ", "")
 		basic_tag = [x[0] for x in tag_categories if rich_tag in x[1]][0] if len([x[0] for x in tag_categories if rich_tag in x[1]]) > 0 else rich_tag
+		if token == "\\\\":
+			token = "\\"
+			lemma = "\\"
 		processed_token = "{}\t{}\t{}\t{}\t{}\t{}\t{}".format(token_id, token, position, lemma, basic_tag, rich_tag, mutation)
 		stats["post-cg"]["disambiguated"] += 1
 		stats["post-cg"]["one_reading"] += 1
@@ -614,6 +645,7 @@ def process_cg_token(token_id, token_readings, token_position):
 		processed_token = process_still_ambiguous(token_id, token, readings, token_position)
 	if output["xml"] != None:
 		append_xml_token(processed_token.split("\t"), len(readings))
+	sentence = processed_token.split("\t")[2].split(",")[0]
 	return("{}\n".format(processed_token))
 
 def get_token_position(current_reading):
@@ -640,15 +672,16 @@ def map_cg(cg_output, mapping_bar=None):
 	cg_tokens = cg_output.strip().splitlines()
 	for i, line in enumerate(cg_tokens):
 		if line != "":
-			if line[:1] != "\t":
-				cg_readings.append([line])
-				cg_readingcount += 1
-				if cg_readingcount > 1:
-					if mapping_bar != None:
-						mapping_bar.next()
-					mapped_output += process_cg_token(cg_readingcount-1, cg_readings[cg_readingcount-2], get_token_position(cg_readings[cg_readingcount-2][1]))
-			else:
-				cg_readings[cg_readingcount-1].append(line)
+			if "~EOS~" not in line:
+				if line[:1] != "\t":
+					cg_readings.append([line])
+					cg_readingcount += 1
+					if cg_readingcount > 1:
+						if mapping_bar != None:
+							mapping_bar.next()
+						mapped_output += process_cg_token(cg_readingcount-1, cg_readings[cg_readingcount-2], get_token_position(cg_readings[cg_readingcount-2][1]))
+				else:
+					cg_readings[cg_readingcount-1].append(line)
 	if mapping_bar != None:
 			mapping_bar.next()
 	mapped_output += process_cg_token(cg_readingcount, cg_readings[cg_readingcount-1], get_token_position(cg_readings[cg_readingcount-1][1]))
@@ -658,11 +691,11 @@ def map_cg(cg_output, mapping_bar=None):
 
 def run_cg(cg_readings, vislcg3_location):
 	""" Given a set of CG-formatted readings, run VISL CG-3 """
-	cg_process = subprocess.Popen([vislcg3_location, '-g', '{}/../grammars/cy_grammar_2017-08-01'.format(os.path.dirname(os.path.abspath(__file__)))], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+	cg_process = subprocess.Popen([vislcg3_location, '--soft-limit', '20', '--hard-limit', "45", "-v", "0", '-g', '{}/../grammars/cy_grammar_2020'.format(os.path.dirname(os.path.abspath(__file__)))], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 	cg_output = cg_process.communicate(input=cg_readings.encode("utf-8"))[0]
 	return(cg_output.decode("utf-8"))
 
-def sentence_readings(tokenised_sentence, total_tokens):
+def sentence_readings(tokenised_sentence, total_tokens, eof="N"):
 	""" Return a set of CG-formatted readings for a tokenised sentence """
 	tokens = tokenised_sentence.splitlines()
 	sentence_lengths.append(len(tokens))
@@ -672,11 +705,25 @@ def sentence_readings(tokenised_sentence, total_tokens):
 		retrieved_readings = get_reading(total_tokens+i+1, [token[1], token[2]])
 		readings += retrieved_readings
 		#pre_cg_reading_counts[len(pre_cg_reading_counts.keys())+1] = len(retrieved_readings.strip().split("\n"))-1
-	readings = readings.strip()
-	readings += "\n"
+
 	if output["readings"] != None:
+		if eof == "Y":
+			readings += '"<~EOS~>"' + "\n" + '\t"~EOS~" {0,0} [cy] Atd t :~EOS~:' + "\n"
+		else:
+			readings += "\n"
 		print(readings, file=output["readings"])
-	return(readings)
+	return readings
+
+def print_cytag(cytag_output, filename_dict):
+	filename = ""
+	for line in cytag_output.splitlines():
+		if line != "":
+			lineparts = line.split("\t")
+			sentence = int(lineparts[2].split(",")[0])
+			if sentence in filename_dict:
+				filename = filename_dict[sentence]
+		line = filename + "\t" + line
+		print(line, file=output["tsv"])
 
 def time_elapsed(started):
 	""" Calculate the elapsed time, given a start time """
@@ -712,7 +759,8 @@ def output_setup(output_name, directory, output_format):
 	if output_format in ["xml", "all"]:
 		output["xml"] = open("{}/{}.xml".format(output["directory"], output_name), "w")
 
-def pos_tagger(input_data, output_name=None, directory=None, output_format=None):
+def pos_tagger(input_data, output_name="None", directory="None", output_format=None, separate="n"):
+	filename_dict = {}
 	""" For a provided input (files, or text as a string): 
 		--- Produce a set of CG-formatted readings
 		--- Run VISL CG-3 to prune the readings
@@ -733,7 +781,10 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 				output["tree"] = etree.Element("corpus")
 				output["tree"].attrib["name"] = output_name
 			for file_id, file in enumerate(input_data):
-				print("Processing file %s of %s: %s " % (str(file_id+1), str(len(input_data)), file))
+				file_name = os.path.basename(file)
+				filename_dict[total_sentences+1] = file_name
+				if output_format != None:
+					print("Processing file %s of %s: %s " % (str(file_id+1), str(len(input_data)), file))
 				file_element = None
 				if output["xml"] != None:
 					file_element = etree.Element("file")
@@ -748,8 +799,7 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 								sentence_element.attrib["id"] = str(total_sentences+1)
 							total_sentences += 1
 							tokens = tokenise(sentence, total_sentences, total_tokens)
-							print("Tokens:", tokens)
-							readings += sentence_readings(tokens, total_tokens)
+							readings += sentence_readings(tokens, total_tokens, eof="Y")
 							total_tokens += len(tokens.splitlines())
 							if output["xml"] != None:
 								file_element.append(sentence_element)
@@ -763,7 +813,7 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 					readings += sentence_readings(tokens, total_tokens)
 					total_tokens += len(tokens.splitlines())
 		if output_format != None:
-			print("From {} tokens:\n--- {} tokens were given readings\n------ {} tokens only have a single reading pre-CG\n--------- {} of which were definite tags (punctuation, symbols etc.)\n------ {} tokens have multiple readings pre-CG\n------ {} tokens have no readings pre-CG\n------ {} tokens without readings were assumed to be proper nouns\n--- {} tokens are still without readings (marked as 'unknown')\n".format(total_tokens, stats["pre-cg"]["with_readings"], stats["pre-cg"]["single_reading"], stats["pre-cg"]["definite_tag"], stats["pre-cg"]["multiple_readings"], stats["pre-cg"]["no_readings"], stats["pre-cg"]["assumed_proper"], stats["pre-cg"]["without_readings"]))
+			print("From {} file(s):\n--- {} tokens were given readings\n------ {} tokens only have a single reading pre-CG\n--------- {} of which were definite tags (punctuation, symbols etc.)\n------ {} tokens have multiple readings pre-CG\n------ {} tokens have no readings pre-CG\n------ {} tokens without readings may be proper nouns\n--- {} tokens are still without readings (marked as 'unknown')\n".format(str(len(input_data)), stats["pre-cg"]["with_readings"], stats["pre-cg"]["single_reading"], stats["pre-cg"]["definite_tag"], stats["pre-cg"]["multiple_readings"], stats["pre-cg"]["no_readings"], stats["pre-cg"]["assumed_proper"], stats["pre-cg"]["without_readings"]))
 		if vislcg3_location == None or vislcg3_location == "" or vislcg3_location == bytearray():
 			raise ValueError("VISL CG-3 could not be found, and is required to continue using CyTag. Please follow the instructions in the README file to install it\n")
 		else:
@@ -783,7 +833,7 @@ def pos_tagger(input_data, output_name=None, directory=None, output_format=None)
 				if output["unknown_words"] != None:
 					save_unknown_words()
 				if output["tsv"] != None:
-					print(cytag_output.strip(), file=output["tsv"])
+					print_cytag(cytag_output, filename_dict)
 				if output["xml"] != None:
 					tree = etree.ElementTree(output["tree"])
 					tree.write(output["xml"].name, pretty_print=True, xml_declaration=True, encoding='UTF-8')
